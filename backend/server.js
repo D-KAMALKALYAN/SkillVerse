@@ -47,24 +47,24 @@ const logSuccess = (message) => console.log(`[SUCCESS] ${message}`.success);
 const logWarning = (message) => console.log(`[WARNING] ${message}`.warning);
 const logError = (message) => console.error(`[ERROR] ${message}`.error);
 
-console.log('Checking route imports...');
+// console.log('Checking route imports...');
 
-try {
-  console.log('authRoutes:', typeof authRoutes);
-  console.log('sessionRoutes:', typeof sessionRoutes);
-  console.log('userRoutes:', typeof userRoutes);
-  console.log('matchingRoutes:', typeof matchingRoutes);
-  console.log('notificationRoutes:', typeof notificationRoutes);
-  console.log('pointsRoutes:', typeof pointsRoutes);
-  console.log('reviewRoutes:', typeof reviewRoutes);
-  console.log('searchRoutes:', typeof searchRoutes);
-  console.log('assessmentRoutes:', typeof assessmentRoutes);
-  console.log('userStatusRoutes:', typeof userStatusRoutes);
-  console.log('profileRoutes:', typeof profileRoutes);
-  console.log('skillRoutes:', typeof require('./routes/skillRoutes'));
-} catch (error) {
-  console.error('Error in route imports:', error);
-}
+// try {
+//   console.log('authRoutes:', typeof authRoutes);
+//   console.log('sessionRoutes:', typeof sessionRoutes);
+//   console.log('userRoutes:', typeof userRoutes);
+//   console.log('matchingRoutes:', typeof matchingRoutes);
+//   console.log('notificationRoutes:', typeof notificationRoutes);
+//   console.log('pointsRoutes:', typeof pointsRoutes);
+//   console.log('reviewRoutes:', typeof reviewRoutes);
+//   console.log('searchRoutes:', typeof searchRoutes);
+//   console.log('assessmentRoutes:', typeof assessmentRoutes);
+//   console.log('userStatusRoutes:', typeof userStatusRoutes);
+//   console.log('profileRoutes:', typeof profileRoutes);
+//   console.log('skillRoutes:', typeof require('./routes/skillRoutes'));
+// } catch (error) {
+//   console.error('Error in route imports:', error);
+// }
 
 // Initialize the application
 const initializeApp = async () => {

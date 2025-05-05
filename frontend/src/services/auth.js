@@ -1,18 +1,16 @@
-import api from './api';
+/**
+ * Authentication API functions
+ */
+import apiClient from '../config/apiClient'; // Import the apiClient instance, not just 'api'
 
 export const register = async (credentials) => {
-  const response = await api.post('/auth/register', credentials);
+  const response = await apiClient.post('/api/auth/register', credentials);
   return response.data;
 };
 
-// export const login = async (credentials) => {
-//   const response = await api.post('/auth/login', credentials);
-//   return response.data;
-// };
-
 export const login = async (credentials) => {
   try {
-    const response = await api.post('/auth/login', credentials);
+    const response = await apiClient.post('/api/auth/login', credentials);
     console.log("Login API Response:", response.data); // Debugging
     console.log(response.data);
     return response.data;
