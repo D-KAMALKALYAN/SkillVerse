@@ -5,6 +5,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
+import apiConfig from '../config/apiConfig';
+import apiClient from '../config/apiClient';
 
 // Import subcomponents
 import DashboardHeader from './dashboard/DashboardHeader';
@@ -15,7 +17,8 @@ import MatchesTab from './dashboard/MatchesTab';
 import SkillsTab from './dashboard/SkillsTab';
 import { fetchUserProfile, fetchCompletedSessionsCount } from './dashboard/dashboardUtils';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:4000';
+// const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:4000';
+const BACKEND_URL = apiConfig.BASE_URL;
 
 // Styled components for responsive design
 const FullScreenContainer = styled(Container)`

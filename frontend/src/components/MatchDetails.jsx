@@ -6,7 +6,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+import apiConfig from '../config/apiConfig';
+import apiClient from '../config/apiClient';
+
+// const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+const BACKEND_URL = apiConfig.BASE_URL;
 
 const MatchDetails = () => {
   const { matchId } = useParams();

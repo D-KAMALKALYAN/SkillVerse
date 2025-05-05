@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import MatchStatusDisplay from './MatchStatusDisplay';
+  import apiConfig from '../config/apiConfig';
+import apiClient from '../config/apiClient';
 
 const MatchesList = ({ user }) => {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
+  // const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
+
+  const BACKEND_URL = apiConfig.BASE_URL;
 
   useEffect(() => {
     fetchMatches();

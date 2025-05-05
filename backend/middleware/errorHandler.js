@@ -1,3 +1,4 @@
+// ./middleware/errorHandler.js
 const logger = require('../utils/logger');
 
 class AppError extends Error {
@@ -10,6 +11,12 @@ class AppError extends Error {
     Error.captureStackTrace(this, this.constructor);
   }
 }
+
+// Add the missing notFound middleware
+const notFound = (req, res, next) => {
+  const error = new AppError(`Not Found - ${req.originalUrl}`, 404);
+  next(error);
+};
 
 const errorHandler = (err, req, res, next) => {
   err.statusCode = err.statusCode || 500;
@@ -40,4 +47,5 @@ const errorHandler = (err, req, res, next) => {
   }
 };
 
-module.exports = { AppError, errorHandler };
+// Export all middleware functions
+module.exports = { AppError, errorHandler, notFound };

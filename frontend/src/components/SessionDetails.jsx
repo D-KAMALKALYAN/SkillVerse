@@ -15,9 +15,13 @@ import {
   ArrowLeft, XCircle, CameraVideoFill,
   PatchCheckFill, ChatLeftTextFill ,  PlusLg
 } from 'react-bootstrap-icons';
+import apiConfig from '../config/apiConfig';
+import apiClient from '../config/apiClient';
 
 // Constants
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:4000';
+// const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:4000';
+const BACKEND_URL = apiConfig.BASE_URL;
+
 const STATUS_VARIANTS = {
   scheduled: 'warning',
   active: 'primary',

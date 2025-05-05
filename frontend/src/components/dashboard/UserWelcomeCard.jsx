@@ -5,6 +5,10 @@ import { PeopleFill, Award, Clock, CheckCircleFill, MortarboardFill, BookFill, C
 import axios from 'axios';
 import { fetchRequestCounts } from './dashboardUtils'; // Update with correct path
 
+import apiConfig from '../../config/apiConfig';
+import apiClient from '../../config/apiClient';
+const BACKEND_URL = apiConfig.BASE_URL;
+
 const UserWelcomeCard = ({ 
   user, 
   stats, 
@@ -72,7 +76,7 @@ const UserWelcomeCard = ({
 
     const fetchUserRequestCounts = async () => {
       if (user && user._id) {
-        const counts = await fetchRequestCounts(user._id, process.env.REACT_APP_BACKEND_URL); // Replace '/api' with your actual API base URL
+        const counts = await fetchRequestCounts(user._id,BACKEND_URL); // Replace '/api' with your actual API base URL
         setRequestCounts(counts);
         console.log('Request Counts:', counts);
       }
