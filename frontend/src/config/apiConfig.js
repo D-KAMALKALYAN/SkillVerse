@@ -6,24 +6,42 @@
  * and production endpoints.
  */
 
-// Detect environment based on hostname
-const isLocalhost = 
-  window.location.hostname === 'localhost' || 
-  window.location.hostname === '127.0.0.1' ||
-  window.location.hostname.includes('192.168.');
+// Detect environment more reliably
+const isLocalDevelopment = () => {
+  // Check if we're in a local development environment
+  const isLocalhost = 
+    window.location.hostname === 'localhost' || 
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname.includes('192.168.');
+  
+  // Check if we're accessing the app via a local URL
+  const isLocalURL = window.location.href.includes('localhost') || 
+                    window.location.href.includes('127.0.0.1') ||
+                    window.location.href.includes('192.168.');
+                    
+  // Additional checks to ensure we're in development mode
+  const isDevelopmentMode = process.env.NODE_ENV === 'development';
+  
+  // Log for debugging purposes
+  console.log(`Environment detection: isLocalhost=${isLocalhost}, isLocalURL=${isLocalURL}, isDevelopmentMode=${isDevelopmentMode}`);
+  
+  return isLocalhost && isLocalURL;
+};
 
-// Define API URLs
+// Define API URLs - make sure PROD_URL is correct
 const PROD_URL = "https://skillverse-backend.onrender.com";
 const DEV_URL = "http://localhost:4000";
 
-// Read from environment variables if available (fallback to our defaults)
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || (isLocalhost ? DEV_URL : PROD_URL);
+// Determine which environment to use
+const useDevEnvironment = isLocalDevelopment();
+
+// Set backend URL - prioritize environment variables, fallback to our local/prod logic
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || (useDevEnvironment ? DEV_URL : PROD_URL);
 const API_URL = process.env.REACT_APP_API_URL || `${BACKEND_URL}/api`;
 
-// Log selected environment during development
-if (process.env.NODE_ENV !== 'production') {
-  console.log(`[API] Using ${isLocalhost ? 'development' : 'production'} API endpoint: ${API_URL}`);
-}
+// Log selected environment for debugging
+console.log(`[API] Using ${useDevEnvironment ? 'development' : 'production'} API endpoint: ${API_URL}`);
+console.log(`[API] Backend URL: ${BACKEND_URL}`);
 
 // Export configuration object
 const apiConfig = {
@@ -58,21 +76,12 @@ const apiConfig = {
   getUrl: (endpoint) => `${API_URL}${endpoint}`
 };
 
-/**
- * Usage:
- * 
- * 1. Import in any file that makes API calls:
- *    import apiConfig from '../path/to/apiConfig';
- * 
- * 2. Use with axios:
- *    axios.get(apiConfig.getUrl(apiConfig.ENDPOINTS.USERS));
- * 
- * 3. Or create an axios instance:
- *    const apiClient = axios.create({ baseURL: apiConfig.API_URL });
- *    apiClient.get(apiConfig.ENDPOINTS.USERS);
- * 
- * 4. Access base URLs directly:
- *    const backendUrl = apiConfig.BASE_URL;
- */
+// Add a method to force production mode if needed
+apiConfig.forceProductionMode = () => {
+  apiConfig.BASE_URL = PROD_URL;
+  apiConfig.API_URL = `${PROD_URL}/api`;
+  console.log(`[API] Forced production mode: ${apiConfig.API_URL}`);
+  return apiConfig;
+};
 
 export default apiConfig;
