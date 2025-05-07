@@ -1,9 +1,11 @@
 // src/services/socketService.js
 import { io } from 'socket.io-client';
+import apiConfig from '../config/apiConfig';
 
 // Extract the base URL without the /api path
 const getBaseUrl = () => {
-  const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:4000/api';
+  // Use baseURL from apiConfig
+  const apiUrl = apiConfig.API_URL || 'http://localhost:4000/api';
   // Remove '/api' from the end if it exists
   return apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
 };
