@@ -5,8 +5,8 @@
  */
 
 import axios from 'axios';
-import apiClient, { isNetworkError, getErrorMessage } from './apiClient';
-import apiConfig from './apiConfig';
+import apiClient, { isNetworkError, getErrorMessage } from '../config/apiClient';
+import apiConfig from '../config/apiConfig';
 
 // Initialize API config
 (async function() {
