@@ -1,137 +1,338 @@
 /**
- * Authentication API functions
+ * Authentication Service
+ * 
+ * Handles user authentication with improved error handling and connection resilience.
  */
-import apiClient from '../config/apiClient'; // Import the apiClient instance
-import apiConfig from '../config/apiConfig'; // Also import apiConfig for direct URL access
 
-// Helper function to ensure we're using the production URL in deployed environments
-const ensureCorrectApiUrl = () => {
-  // If we're not on localhost but the API URL includes localhost, force production mode
-  if (!window.location.hostname.includes('localhost') && apiConfig.API_URL.includes('localhost')) {
-    console.warn('[Auth] Detected misconfigured API URL. Forcing production mode.');
+import axios from 'axios';
+import apiClient, { isNetworkError, getErrorMessage } from './apiClient';
+import apiConfig from './apiConfig';
+
+// Initialize API config
+(async function() {
+  try {
+    await apiConfig.initialize();
+    console.log(`[Auth] Using API endpoint: ${apiConfig.API_URL}`);
+  } catch (error) {
+    console.error('[Auth] API config initialization failed:', error);
+  }
+})();
+
+/**
+ * Check if the configured API URL is reachable
+ * @returns {Promise<boolean>} True if API is reachable
+ */
+const checkApiHealth = async () => {
+  try {
+    // Use a simple health check endpoint that should exist on both environments
+    // Many backends use /health, /ping, or / as simple health endpoints
+    const endpoints = [
+      `${apiConfig.API_URL}${apiConfig.ENDPOINTS.AUTH.HEALTH || '/health'}`,
+      `${apiConfig.API_URL}/ping`,
+      `${apiConfig.API_URL}/`
+    ];
+    
+    for (const endpoint of endpoints) {
+      try {
+        console.log(`[Auth] Checking API health at: ${endpoint}`);
+        const response = await axios.get(endpoint, { timeout: 3000 });
+        if (response.status >= 200 && response.status < 500) {
+          console.log(`[Auth] API health check successful: ${response.status}`);
+          return true; // Any response that's not a server error is considered successful
+        }
+      } catch (endpointError) {
+        console.log(`[Auth] Health check failed for ${endpoint}: ${endpointError.message}`);
+        // Continue to next endpoint
+      }
+    }
+    
+    // If we get here, all health checks failed
+    console.warn('[Auth] All API health checks failed.');
+    return false;
+  } catch (error) {
+    console.warn('[Auth] API health check error:', error.message);
+    return false;
+  }
+};
+
+/**
+ * Login user
+ * @param {object} credentials - User credentials (email and password)
+ * @returns {Promise} Promise resolving to login result
+ */
+export const login = async (credentials) => {
+  // Validate credentials before attempting API call
+  if (!credentials.email || !credentials.password) {
+    console.error('[Auth] Login failed: Missing email or password');
+    throw new Error('Email and password are required');
+  }
+  
+  console.log(`[Auth] Attempting login to: ${apiConfig.API_URL}${apiConfig.ENDPOINTS.AUTH.LOGIN}`);
+  
+  // First ensure API is reachable
+  const isApiHealthy = await checkApiHealth();
+  if (!isApiHealthy && !apiConfig.isProduction) {
+    console.log('[Auth] API not reachable. Switching to production mode.');
     apiConfig.forceProductionMode();
   }
-};
-
-export const register = async (credentials) => {
-  ensureCorrectApiUrl();
+  
   try {
-    const response = await apiClient.post(apiConfig.ENDPOINTS.AUTH.REGISTER, credentials);
-    return response.data;
-  } catch (error) {
-    console.error("Register API Error:", error.response?.data || error.message);
-    throw error;
-  }
-};
-
-export const login = async (credentials) => {
-  ensureCorrectApiUrl();
-  try {
-    console.log(`[Auth] Attempting login to: ${apiConfig.API_URL}${apiConfig.ENDPOINTS.AUTH.LOGIN}`);
     const response = await apiClient.post(apiConfig.ENDPOINTS.AUTH.LOGIN, credentials);
-    console.log("[Auth] Login successful:", response.data);
     
-    // Store tokens if they exist in the response
-    if (response.data.token) {
+    // Store token and user info
+    if (response.data?.token) {
       localStorage.setItem('token', response.data.token);
       
       if (response.data.refreshToken) {
         localStorage.setItem('refreshToken', response.data.refreshToken);
       }
+      
+      if (response.data.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
     }
     
+    console.log('[Auth] Login successful');
     return response.data;
   } catch (error) {
-    // Enhanced error logging
-    if (error.response) {
-      console.error(`[Auth] Login failed with status ${error.response.status}:`, error.response.data);
-    } else if (error.request) {
-      console.error("[Auth] Login failed - No response received. API URL:", apiConfig.API_URL);
+    // First check for network issues
+    if (isNetworkError(error)) {
+      console.error('[Auth] Login failed - Network error:', error.message);
       
-      // Attempt direct fetch as a fallback to check server availability
-      try {
-        const prodUrl = "https://skillverse-backend.onrender.com/api/health";
-        console.log(`[Auth] Attempting fallback health check to: ${prodUrl}`);
-        fetch(prodUrl)
-          .then(response => {
-            console.log(`[Auth] Fallback health check response: ${response.status}`);
-          })
-          .catch(err => {
-            console.error("[Auth] Fallback health check failed:", err);
-          });
-      } catch (fallbackError) {
-        console.error("[Auth] Fallback check also failed");
+      // Try production URL if we're not already using it
+      if (!apiConfig.isProduction) {
+        console.log('[Auth] Attempting login with production fallback');
+        apiConfig.forceProductionMode();
+        
+        try {
+          // Do a health check first
+          const isHealthy = await checkApiHealth();
+          if (!isHealthy) {
+            throw new Error('Production API is not reachable');
+          }
+          
+          // Try login again with production URL
+          const retryResponse = await apiClient.post(apiConfig.ENDPOINTS.AUTH.LOGIN, credentials);
+          
+          // Store token and user info
+          if (retryResponse.data?.token) {
+            localStorage.setItem('token', retryResponse.data.token);
+            
+            if (retryResponse.data.refreshToken) {
+              localStorage.setItem('refreshToken', retryResponse.data.refreshToken);
+            }
+            
+            if (retryResponse.data.user) {
+              localStorage.setItem('user', JSON.stringify(retryResponse.data.user));
+            }
+          }
+          
+          console.log('[Auth] Login successful with production fallback');
+          return retryResponse.data;
+        } catch (fallbackError) {
+          console.error('[Auth] Fallback login failed:', fallbackError.message);
+          throw new Error('Unable to connect to the server. Please check your internet connection or try again later.');
+        }
+      } else {
+        throw new Error('Unable to connect to the server. Please check your internet connection or try again later.');
+      }
+    }
+    
+    // Handle specific HTTP errors
+    if (error.response) {
+      const status = error.response.status;
+      const errorData = error.response.data;
+      
+      console.error(`[Auth] Login failed with status ${status}:`, errorData);
+      
+      // Enhance error with specific user messages based on status code
+      switch (status) {
+        case 400:
+          error.userMessage = errorData?.message || 'Invalid login credentials. Please check your email and password.';
+          break;
+        case 401:
+          error.userMessage = 'Incorrect email or password. Please try again.';
+          break;
+        case 403:
+          error.userMessage = 'Your account has been disabled. Please contact support.';
+          break;
+        case 404:
+          error.userMessage = 'Login service not found. Please try again later.';
+          break;
+        case 429:
+          error.userMessage = 'Too many failed login attempts. Please try again later.';
+          break;
+        case 500:
+        case 502:
+        case 503:
+        case 504:
+          error.userMessage = 'Server error. Please try again later.';
+          break;
+        default:
+          error.userMessage = errorData?.message || getErrorMessage(error);
       }
     } else {
-      console.error("[Auth] Login Error:", error.message);
+      error.userMessage = getErrorMessage(error);
     }
+    
+    console.error('[Auth] Login error:', error.userMessage);
     throw error;
   }
 };
 
-export const logout = async () => {
-  ensureCorrectApiUrl();
-  try {
-    // Attempt to call logout endpoint
-    await apiClient.post(apiConfig.ENDPOINTS.AUTH.LOGOUT);
-  } catch (error) {
-    console.warn("[Auth] Logout API call failed:", error.message);
-    // Continue with local logout even if API call fails
-  } finally {
-    // Always clear local storage tokens
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
+/**
+ * Register a new user
+ * @param {object} userData - User registration data
+ * @returns {Promise} Promise resolving to registration result
+ */
+export const register = async (userData) => {
+  // Validate data before attempting API call
+  if (!userData.email || !userData.password) {
+    throw new Error('Email and password are required');
   }
-};
-
-export const checkAuthStatus = async () => {
-  ensureCorrectApiUrl();
+  
   try {
-    // Check if we have a token
-    const token = localStorage.getItem('token');
-    if (!token) {
-      return { isAuthenticated: false };
-    }
+    const response = await apiClient.post(apiConfig.ENDPOINTS.AUTH.REGISTER, userData);
+    console.log('[Auth] Registration successful');
     
-    // Verify token is valid by fetching user data
-    const response = await apiClient.get(apiConfig.ENDPOINTS.AUTH.USER);
-    return { 
-      isAuthenticated: true, 
-      user: response.data 
-    };
-  } catch (error) {
-    // If auth check fails, clear tokens
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    
-    return { isAuthenticated: false };
-  }
-};
-
-export const refreshAuthToken = async () => {
-  ensureCorrectApiUrl();
-  try {
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) {
-      throw new Error('No refresh token available');
-    }
-    
-    const response = await apiClient.post(apiConfig.ENDPOINTS.AUTH.REFRESH, { refreshToken });
-    
-    if (response.data.token) {
+    // Store token if returned with registration
+    if (response.data?.token) {
       localStorage.setItem('token', response.data.token);
       
       if (response.data.refreshToken) {
         localStorage.setItem('refreshToken', response.data.refreshToken);
       }
       
-      return true;
+      if (response.data.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
     }
-    return false;
+    
+    return response.data;
   } catch (error) {
-    console.error("[Auth] Token refresh failed:", error.message);
+    console.error('[Auth] Registration error:', error);
+    
+    // Handle specific HTTP errors
+    if (error.response) {
+      const status = error.response.status;
+      
+      switch (status) {
+        case 409:
+          error.userMessage = 'Email address is already registered. Please use a different email or try to login.';
+          break;
+        case 400:
+          error.userMessage = error.response.data?.message || 'Invalid registration data. Please check your information.';
+          break;
+        default:
+          error.userMessage = error.response.data?.message || getErrorMessage(error);
+      }
+    } else {
+      error.userMessage = getErrorMessage(error);
+    }
+    
+    throw error;
+  }
+};
+
+/**
+ * Logout user
+ * @returns {Promise} Promise resolving when logout is complete
+ */
+export const logout = async () => {
+  try {
+    await apiClient.post(apiConfig.ENDPOINTS.AUTH.LOGOUT);
+    console.log('[Auth] Logout successful');
+  } catch (error) {
+    console.warn('[Auth] Logout error:', error);
+    // Continue with logout even if API call fails
+  } finally {
+    // Always clear local storage
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
-    return false;
+    localStorage.removeItem('user');
+    return true;
+  }
+};
+
+/**
+ * Verify if current token is valid
+ * @returns {Promise} Promise resolving to user data if valid
+ */
+export const verifyToken = async () => {
+  try {
+    const response = await apiClient.get(apiConfig.ENDPOINTS.AUTH.USER);
+    return response.data;
+  } catch (error) {
+    console.error('[Auth] Token verification failed:', error.message);
+    
+    // Clear token if it's invalid
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+    }
+    
+    throw error;
+  }
+};
+
+/**
+ * Request password reset
+ * @param {string} email - User email
+ * @returns {Promise} Promise resolving to reset request result
+ */
+export const requestPasswordReset = async (email) => {
+  if (!email) {
+    throw new Error('Email is required');
+  }
+  
+  try {
+    const endpoint = apiConfig.ENDPOINTS.AUTH.RESET_PASSWORD || '/auth/reset-password';
+    const response = await apiClient.post(endpoint, { email });
+    return response.data;
+  } catch (error) {
+    console.error('[Auth] Password reset request error:', error);
+    
+    if (error.response && error.response.status === 404) {
+      // Don't reveal if email exists or not for security
+      return { message: 'If your email is registered, you will receive reset instructions shortly.' };
+    }
+    
+    error.userMessage = getErrorMessage(error);
+    throw error;
+  }
+};
+
+/**
+ * Complete password reset
+ * @param {object} resetData - Password reset data including token and new password
+ * @returns {Promise} Promise resolving to reset result
+ */
+export const completePasswordReset = async (resetData) => {
+  if (!resetData.token || !resetData.password) {
+    throw new Error('Reset token and new password are required');
+  }
+  
+  try {
+    const endpoint = apiConfig.ENDPOINTS.AUTH.RESET_PASSWORD_CONFIRM || '/auth/reset-password/confirm';
+    const response = await apiClient.post(endpoint, resetData);
+    return response.data;
+  } catch (error) {
+    console.error('[Auth] Password reset completion error:', error);
+    
+    // Handle specific errors
+    if (error.response) {
+      switch (error.response.status) {
+        case 400:
+          error.userMessage = error.response.data?.message || 'Invalid or expired reset token. Please request a new password reset.';
+          break;
+        default:
+          error.userMessage = error.response.data?.message || getErrorMessage(error);
+      }
+    } else {
+      error.userMessage = getErrorMessage(error);
+    }
+    
+    throw error;
   }
 };

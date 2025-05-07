@@ -1,87 +1,116 @@
 /**
- * API Configuration File
+ * API Configuration
  * 
- * This file configures the base URL for all API calls and includes
- * environment detection to automatically switch between development
- * and production endpoints.
+ * Handles environment-specific API configuration with better
+ * detection and fallback mechanisms.
  */
 
-// Detect environment more reliably
-const isLocalDevelopment = () => {
-  // Check if we're in a local development environment
-  const isLocalhost = 
-    window.location.hostname === 'localhost' || 
-    window.location.hostname === '127.0.0.1' ||
-    window.location.hostname.includes('192.168.');
-  
-  // Check if we're accessing the app via a local URL
-  const isLocalURL = window.location.href.includes('localhost') || 
-                    window.location.href.includes('127.0.0.1') ||
-                    window.location.href.includes('192.168.');
-                    
-  // Additional checks to ensure we're in development mode
-  const isDevelopmentMode = process.env.NODE_ENV === 'development';
-  
-  // Log for debugging purposes
-  console.log(`Environment detection: isLocalhost=${isLocalhost}, isLocalURL=${isLocalURL}, isDevelopmentMode=${isDevelopmentMode}`);
-  
-  return isLocalhost && isLocalURL;
+// Configuration options
+const ENVIRONMENTS = {
+  DEVELOPMENT: {
+    API_URL: 'http://localhost:4000/api',
+    BACKEND_URL: 'http://localhost:4000',
+  },
+  PRODUCTION: {
+    API_URL: 'https://skillverse-backend.onrender.com/api',
+    BACKEND_URL: 'https://skillverse-backend.onrender.com',
+  }
 };
 
-// Define API URLs - make sure PROD_URL is correct
-const PROD_URL = "https://skillverse-backend.onrender.com";
-const DEV_URL = "http://localhost:4000";
+// Endpoints configuration
+const ENDPOINTS = {
+  AUTH: {
+    LOGIN: '/auth/login',
+    REGISTER: '/auth/register',
+    LOGOUT: '/auth/logout',
+    USER: '/auth/user',
+    HEALTH: '/health', // Make sure this endpoint exists on your backend
+    RESET_PASSWORD: '/auth/reset-password',
+    RESET_PASSWORD_CONFIRM: '/auth/reset-password/confirm',
+  }
+};
 
-// Determine which environment to use
-const useDevEnvironment = isLocalDevelopment();
-
-// Set backend URL - prioritize environment variables, fallback to our local/prod logic
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || (useDevEnvironment ? DEV_URL : PROD_URL);
-const API_URL = process.env.REACT_APP_API_URL || `${BACKEND_URL}/api`;
-
-// Log selected environment for debugging
-console.log(`[API] Using ${useDevEnvironment ? 'development' : 'production'} API endpoint: ${API_URL}`);
-console.log(`[API] Backend URL: ${BACKEND_URL}`);
-
-// Export configuration object
+// Config object to export
 const apiConfig = {
-  BASE_URL: BACKEND_URL,
-  API_URL: API_URL,
+  API_URL: '',
+  BACKEND_URL: '',
+  ENDPOINTS,
+  isInitialized: false,
+  isProduction: false,
   
-  // Add endpoints here for easier reference
-  ENDPOINTS: {
-    AUTH: {
-      LOGIN: '/auth/login',
-      REGISTER: '/auth/register',
-      LOGOUT: '/auth/logout',
-      REFRESH: '/auth/refresh-token',
-      USER: '/auth/user'
-    },
-    USERS: '/users',
-    POINTS: {
-      USER_POINTS: '/points/user-points',
-      LEADERBOARD: '/points/leaderboard',
-      CHECKIN: '/points/checkin'
-    },
-    MATCHES: {
-      GENERATE: '/matches/generate'
-    },
-    SESSIONS: {
-      COMPLETED: '/sessions/completed'
-    },
-    SKILLS: '/skills'
+  /**
+   * Initialize API configuration based on environment
+   */
+  async initialize() {
+    if (this.isInitialized) return;
+    
+    // Determine environment
+    const isLocalhost = 
+      window.location.hostname === 'localhost' || 
+      window.location.hostname === '127.0.0.1';
+    
+    const isLocalURL = 
+      window.location.hostname.includes('.local') || 
+      window.location.hostname.includes('.test');
+      
+    const isDevelopmentMode = 
+      process.env.NODE_ENV === 'development' || 
+      window.location.hostname.includes('dev.');
+    
+    console.log(`Environment detection: isLocalhost=${isLocalhost}, isLocalURL=${isLocalURL}, isDevelopmentMode=${isDevelopmentMode}`);
+    
+    // Default to development if on localhost/development, otherwise production
+    const environment = (isLocalhost || isLocalURL || isDevelopmentMode) 
+      ? ENVIRONMENTS.DEVELOPMENT 
+      : ENVIRONMENTS.PRODUCTION;
+    
+    this.API_URL = environment.API_URL;
+    this.BACKEND_URL = environment.BACKEND_URL;
+    this.isProduction = environment === ENVIRONMENTS.PRODUCTION;
+    
+    console.log(`[API] Using ${this.isProduction ? 'production' : 'development'} API endpoint: ${this.API_URL}`);
+    console.log(`[API] Backend URL: ${this.BACKEND_URL}`);
+    
+    this.isInitialized = true;
+    return this;
   },
   
-  // Helper function to build full URLs
-  getUrl: (endpoint) => `${API_URL}${endpoint}`
+  /**
+   * Force production mode (used as fallback)
+   */
+  forceProductionMode() {
+    const wasChanged = this.API_URL !== ENVIRONMENTS.PRODUCTION.API_URL;
+    
+    this.API_URL = ENVIRONMENTS.PRODUCTION.API_URL;
+    this.BACKEND_URL = ENVIRONMENTS.PRODUCTION.BACKEND_URL;
+    this.isProduction = true;
+    
+    if (wasChanged) {
+      console.log(`[API] Forced production mode: ${this.API_URL}`);
+    }
+    
+    return this;
+  },
+  
+  /**
+   * Force development mode (for testing)
+   */
+  forceDevelopmentMode() {
+    const wasChanged = this.API_URL !== ENVIRONMENTS.DEVELOPMENT.API_URL;
+    
+    this.API_URL = ENVIRONMENTS.DEVELOPMENT.API_URL;
+    this.BACKEND_URL = ENVIRONMENTS.DEVELOPMENT.BACKEND_URL;
+    this.isProduction = false;
+    
+    if (wasChanged) {
+      console.log(`[API] Forced development mode: ${this.API_URL}`);
+    }
+    
+    return this;
+  }
 };
 
-// Add a method to force production mode if needed
-apiConfig.forceProductionMode = () => {
-  apiConfig.BASE_URL = PROD_URL;
-  apiConfig.API_URL = `${PROD_URL}/api`;
-  console.log(`[API] Forced production mode: ${apiConfig.API_URL}`);
-  return apiConfig;
-};
+// Initialize on import
+apiConfig.initialize();
 
 export default apiConfig;
