@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Routes, Route, useLocation } from 'react-router-dom';
-import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
+import apiClient from '../../api/apiClient';
+import apiConfig from '../../api/apiConfig';
+import { getErrorMessage } from '../../api/apiClient';
 
 // Import components
 import CompletedSessionsList from './CompletedSessionsList';
@@ -46,19 +48,19 @@ const SessionAssessmentDashboard = () => {
         setLoading(true);
         
         // Get completed sessions
-        const sessionsResponse = await axios.get(`/api/sessions/user/${user._id}`);
+        const sessionsResponse = await apiClient.get(`/sessions/user/${user._id}`);
         const completedSessions = sessionsResponse.data.sessions.filter(
           session => session.status === 'completed'
         );
         
         // Get accepted matches
-        const matchesResponse = await axios.get(`/api/matches/user/${user._id}`);
+        const matchesResponse = await apiClient.get(`/matches/user/${user._id}`);
         const acceptedMatches = matchesResponse.data.matches.filter(
           match => match.status === 'accepted' || match.status === 'completed'
         );
         
         // Get total assessments
-        const assessmentsResponse = await axios.get('/api/assessments/user');
+        const assessmentsResponse = await apiClient.get('/assessments/user');
         
         setStats({
           totalCompletedSessions: completedSessions.length,
@@ -68,7 +70,7 @@ const SessionAssessmentDashboard = () => {
         
       } catch (err) {
         console.error('Error fetching stats:', err);
-        setError('Failed to load session and match information');
+        setError(getErrorMessage(err) || 'Failed to load session and match information');
       } finally {
         setLoading(false);
       }

@@ -12,8 +12,11 @@ import {
   Clock,
   Person
 } from 'react-bootstrap-icons';
-import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
+
+// Import apiClient and apiConfig instead of axios directly
+import apiClient, { getErrorMessage, isNetworkError } from './apiClient';
+import apiConfig from './apiConfig';
 
 const TeacherProfilePage = () => {
   const { teacherId } = useParams();
@@ -24,29 +27,44 @@ const TeacherProfilePage = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
-    // Check if user is logged in (you might need to adapt this based on your auth system)
+    // Check if user is logged in
     const checkAuthStatus = () => {
       const token = localStorage.getItem('token');
       setIsLoggedIn(!!token);
     };
-
     checkAuthStatus();
     
     const fetchTeacherProfile = async () => {
       try {
-        const response = await axios.get(`/api/search/teacher/${teacherId}`);
+        // Use apiClient instead of axios directly
+        const endpoint = `/search/teacher/${teacherId}`;
+        console.log(`[Teacher Profile] Fetching data from: ${endpoint}`);
+        
+        const response = await apiClient.get(endpoint);
         setProfileData(response.data.data);
       } catch (err) {
         console.error('Error fetching teacher profile:', err);
-        setError(err.response?.data?.message || 'Error loading teacher profile');
+        // Use getErrorMessage helper from apiClient
+        setError(getErrorMessage(err));
       } finally {
         setLoading(false);
       }
     };
-
-    fetchTeacherProfile();
+    
+    // Check API health before fetching data
+    const initializeData = async () => {
+      // Optional: Check API health first
+      const isHealthy = await apiConfig.checkHealth();
+      if (!isHealthy) {
+        console.warn('[Teacher Profile] API health check failed, proceeding anyway');
+      }
+      
+      fetchTeacherProfile();
+    };
+    
+    initializeData();
   }, [teacherId]);
-
+  
   const handleBackNavigation = () => {
     if (isLoggedIn) {
       navigate('/dashboard');
@@ -54,15 +72,17 @@ const TeacherProfilePage = () => {
       navigate('/');
     }
   };
-
+  
   const handleBookSession = () => {
     if (isLoggedIn) {
       navigate('/match/learning');
     } else {
+      // Store the current path to redirect back after login
+      localStorage.setItem('redirectAfterLogin', `/teacher/${teacherId}`);
       navigate('/register');
     }
   };
-
+  
   if (loading) {
     return (
       <Container className="py-5 text-center">
@@ -79,7 +99,7 @@ const TeacherProfilePage = () => {
       </Container>
     );
   }
-
+  
   if (error) {
     return (
       <Container className="py-5">
@@ -108,9 +128,9 @@ const TeacherProfilePage = () => {
       </Container>
     );
   }
-
+  
   const { teacher, skills, stats, recentReviews } = profileData;
-
+  
   const getLevelBadgeColor = (level) => {
     switch(level) {
       case 'Beginner': return 'linear-gradient(to right, #10b981, #047857)';
@@ -128,7 +148,7 @@ const TeacherProfilePage = () => {
       default: return '#4b5563';
     }
   };
-
+  
   // Get initials for avatar
   const getInitials = (name) => {
     if (!name) return "?";
@@ -139,7 +159,21 @@ const TeacherProfilePage = () => {
       .toUpperCase()
       .substring(0, 2);
   };
-
+  
+  // Helper to format dates consistently
+  const formatDate = (dateString) => {
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (err) {
+      console.error('Error formatting date:', err);
+      return 'Invalid date';
+    }
+  };
+  
   return (
     <Container className="py-5">
       {/* Back navigation */}
@@ -245,10 +279,10 @@ const TeacherProfilePage = () => {
                   Skills & Expertise
                 </h3>
                 
-                {skills.length > 0 ? (
+                {skills && skills.length > 0 ? (
                   <Row xs={1} md={2} lg={3} className="g-4">
                     {skills.map((skill) => (
-                      <Col key={skill._id}>
+                      <Col key={skill._id || `skill-${skill.skillName}`}>
                         <Card className="h-100 border-0 shadow-sm rounded-4 hover-lift">
                           <Card.Body className="p-4">
                             <div className="d-flex justify-content-between align-items-center mb-3">
@@ -295,10 +329,10 @@ const TeacherProfilePage = () => {
                   Recent Reviews
                 </h3>
                 
-                {recentReviews.length > 0 ? (
+                {recentReviews && recentReviews.length > 0 ? (
                   <Row xs={1} md={2} className="g-4">
                     {recentReviews.map((review) => (
-                      <Col key={review._id}>
+                      <Col key={review._id || `review-${review.studentId._id || Math.random()}`}>
                         <Card className="h-100 border-0 shadow-sm rounded-4 hover-lift">
                           <Card.Body className="p-4">
                             <div className="d-flex justify-content-between mb-3">
@@ -307,16 +341,16 @@ const TeacherProfilePage = () => {
                                   style={{ 
                                     width: '48px', 
                                     height: '48px', 
-                                    background: `hsl(${(review.studentId.name?.charCodeAt(0) * 70) % 360 || 0}, 70%, 65%)`,
+                                    background: `hsl(${(review.studentId?.name?.charCodeAt(0) * 70) % 360 || 0}, 70%, 65%)`,
                                     color: 'white'
                                   }}>
-                                  <span className="fw-bold">{getInitials(review.studentId.name)}</span>
+                                  <span className="fw-bold">{getInitials(review.studentId?.name || 'Anonymous')}</span>
                                 </div>
                                 <div>
-                                  <h5 className="mb-0 fw-bold">{review.studentId.name}</h5>
+                                  <h5 className="mb-0 fw-bold">{review.studentId?.name || 'Anonymous Student'}</h5>
                                   <div className="d-flex align-items-center text-muted small">
                                     <MortarboardFill className="me-1" />
-                                    <span>Learned {review.skillId.skillName}</span>
+                                    <span>Learned {review.skillId?.skillName || 'a skill'}</span>
                                   </div>
                                 </div>
                               </div>
@@ -342,13 +376,7 @@ const TeacherProfilePage = () => {
                             
                             <div className="d-flex align-items-center text-muted small mt-3">
                               <Clock className="me-1" />
-                              <span>
-                                {new Date(review.createdAt).toLocaleDateString('en-US', {
-                                  year: 'numeric',
-                                  month: 'short',
-                                  day: 'numeric'
-                                })}
-                              </span>
+                              <span>{formatDate(review.createdAt)}</span>
                             </div>
                           </Card.Body>
                         </Card>

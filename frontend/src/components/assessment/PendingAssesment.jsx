@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { 
   FileEarmarkPdf, 
@@ -9,6 +8,8 @@ import {
 } from 'react-bootstrap-icons';
 import Loading from '../common/Loading';
 import Error from '../common/Error';
+import apiClient from '../../api/apiClient';
+import { getErrorMessage } from '../../api/apiClient';
 
 const PendingAssessments = () => {
   const [pendingAssessments, setPendingAssessments] = useState([]);
@@ -19,11 +20,7 @@ const PendingAssessments = () => {
     const fetchPendingAssessments = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('/api/assessments/pending-evaluation', {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        });
+        const response = await apiClient.get('/assessments/pending-evaluation');
         
         if (response.data.success) {
           setPendingAssessments(response.data.assessments);
@@ -32,7 +29,7 @@ const PendingAssessments = () => {
         }
       } catch (err) {
         console.error('Error:', err);
-        setError(err.message || 'Failed to load pending assessments');
+        setError(getErrorMessage(err) || 'Failed to load pending assessments');
       } finally {
         setLoading(false);
       }

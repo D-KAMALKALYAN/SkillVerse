@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import axios from 'axios';
+import apiConfig from '../../utils/apiConfig';
+import { getErrorMessage } from '../../utils/apiConfig';
 
 // Import icons
 import {
@@ -40,14 +41,14 @@ const SessionManagement = () => {
         setLoading(true);
         setError('');
         
+        // Ensure API config is initialized
+        if (!apiConfig.isInitialized) {
+          await apiConfig.initialize();
+        }
+        
         // Fetch session details if sessionId is available
         if (sessionId) {
-          const response = await axios.get(`/api/sessions/${sessionId}`, {
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            }
-          });
+          const response = await apiConfig.client.get(`/sessions/${sessionId}`);
           
           if (response.data && response.data.session) {
             setSession(response.data.session);
@@ -67,12 +68,7 @@ const SessionManagement = () => {
           }
         } else {
           // If no sessionId, fetch all user sessions
-          const userSessions = await axios.get(`/api/sessions/user/${user._id}`, {
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            }
-          });
+          const userSessions = await apiConfig.client.get(`/sessions/user/${user._id}`);
           
           if (userSessions.data && userSessions.data.sessions && userSessions.data.sessions.length > 0) {
             // You could set these to state if you want to display a list
@@ -81,7 +77,7 @@ const SessionManagement = () => {
         }
       } catch (err) {
         console.error('Error fetching session:', err);
-        setError('Failed to load session information. Please try refreshing the page.');
+        setError(getErrorMessage(err) || 'Failed to load session information. Please try refreshing the page.');
       } finally {
         setLoading(false);
       }
@@ -98,12 +94,7 @@ const SessionManagement = () => {
       setLoading(true);
       setError('');
       
-      const response = await axios.put(`/api/sessions/${sessionId}/confirm`, {}, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        }
-      });
+      const response = await apiConfig.client.put(`/sessions/${sessionId}/confirm`, {});
       
       if (response.data && response.data.success) {
         // Update session status in state
@@ -116,7 +107,7 @@ const SessionManagement = () => {
       }
     } catch (err) {
       console.error('Error confirming session:', err);
-      setSubmitError('Failed to confirm session. Please try again.');
+      setSubmitError(getErrorMessage(err) || 'Failed to confirm session. Please try again.');
       setTimeout(() => setSubmitError(''), 3000);
     } finally {
       setLoading(false);
@@ -129,12 +120,7 @@ const SessionManagement = () => {
       setLoading(true);
       setError('');
       
-      const response = await axios.put(`/api/sessions/${sessionId}/complete`, {}, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        }
-      });
+      const response = await apiConfig.client.put(`/sessions/${sessionId}/complete`, {});
       
       if (response.data && response.data.success) {
         // Update session status in state
@@ -147,7 +133,7 @@ const SessionManagement = () => {
       }
     } catch (err) {
       console.error('Error completing session:', err);
-      setSubmitError('Failed to mark session as completed. Please try again.');
+      setSubmitError(getErrorMessage(err) || 'Failed to mark session as completed. Please try again.');
       setTimeout(() => setSubmitError(''), 3000);
     } finally {
       setLoading(false);
@@ -164,12 +150,7 @@ const SessionManagement = () => {
       setLoading(true);
       setError('');
       
-      const response = await axios.put(`/api/sessions/${sessionId}/cancel`, {}, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        }
-      });
+      const response = await apiConfig.client.put(`/sessions/${sessionId}/cancel`, {});
       
       if (response.data && response.data.success) {
         // Update session status in state
@@ -182,7 +163,7 @@ const SessionManagement = () => {
       }
     } catch (err) {
       console.error('Error cancelling session:', err);
-      setSubmitError('Failed to cancel session. Please try again.');
+      setSubmitError(getErrorMessage(err) || 'Failed to cancel session. Please try again.');
       setTimeout(() => setSubmitError(''), 3000);
     } finally {
       setLoading(false);
@@ -197,15 +178,7 @@ const SessionManagement = () => {
       setLoading(true);
       setError('');
       
-      const response = await axios.put(`/api/sessions/${sessionId}/meeting-link`, 
-        { meetingLink },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          }
-        }
-      );
+      const response = await apiConfig.client.put(`/sessions/${sessionId}/meeting-link`, { meetingLink });
       
       if (response.data && response.data.success) {
         // Update session in state
@@ -218,7 +191,7 @@ const SessionManagement = () => {
       }
     } catch (err) {
       console.error('Error updating meeting link:', err);
-      setSubmitError('Failed to update meeting link. Please try again.');
+      setSubmitError(getErrorMessage(err) || 'Failed to update meeting link. Please try again.');
       setTimeout(() => setSubmitError(''), 3000);
     } finally {
       setLoading(false);
@@ -241,15 +214,7 @@ const SessionManagement = () => {
       
       // For teacher feedback
       if (isTeacher) {
-        const response = await axios.post(`/api/sessions/${sessionId}/teacher-feedback`, 
-          { feedback },
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            }
-          }
-        );
+        const response = await apiConfig.client.post(`/sessions/${sessionId}/teacher-feedback`, { feedback });
         
         if (response.data && response.data.success) {
           setFeedback('');
@@ -258,15 +223,7 @@ const SessionManagement = () => {
         }
       } else {
         // For learner feedback
-        const response = await axios.post(`/api/sessions/${sessionId}/feedback`, 
-          { feedback },
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            }
-          }
-        );
+        const response = await apiConfig.client.post(`/sessions/${sessionId}/feedback`, { feedback });
         
         if (response.data && response.data.success) {
           setFeedback('');
@@ -276,11 +233,20 @@ const SessionManagement = () => {
       }
     } catch (err) {
       console.error('Error submitting feedback:', err);
-      setSubmitError('Failed to submit feedback. Please try again.');
+      setSubmitError(getErrorMessage(err) || 'Failed to submit feedback. Please try again.');
       setTimeout(() => setSubmitError(''), 3000);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle API errors by checking connectivity
+  const handleApiError = async (error) => {
+    const isConnected = await apiConfig.checkHealth();
+    if (!isConnected) {
+      return 'Unable to connect to the server. Please check your internet connection and try again.';
+    }
+    return getErrorMessage(error);
   };
 
   if (loading) {

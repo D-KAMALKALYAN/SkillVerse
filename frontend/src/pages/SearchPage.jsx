@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Button, Alert, Card, Spinner, Toast } from 'react-bootstrap';
 import { useLocation, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import SearchBar from '../components/search/SearchBar';
 import SearchResults from '../components/search/SearchResults';
 import { ArrowLeft, Search, InfoCircle, MortarboardFill, BookFill } from 'react-bootstrap-icons';
 import { useAuth } from '../context/AuthContext';
+import apiClient, { getErrorMessage } from '../utils/apiClient';
+import apiConfig from '../utils/apiConfig';
 
 const SearchPage = () => {
   const [searchResults, setSearchResults] = useState([]);
@@ -54,11 +55,12 @@ const SearchPage = () => {
         queryParams.append('skillLevel', searchParams.skillLevel);
       }
       
-      // Add timeout to prevent infinite loading
+      // Create abort controller for timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
       
-      const response = await axios.get(`/api/search/skills?${queryParams.toString()}`, {
+      // Use apiClient instead of direct axios call
+      const response = await apiClient.get(`/search/skills?${queryParams.toString()}`, {
         signal: controller.signal
       });
       
@@ -71,10 +73,11 @@ const SearchPage = () => {
       
     } catch (err) {
       console.error('Search error:', err);
+      // Use the getErrorMessage helper from apiClient
       if (err.name === 'AbortError') {
         setError('Search request timed out. Please try again.');
       } else {
-        setError(err.response?.data?.message || 'An error occurred while searching');
+        setError(getErrorMessage(err));
       }
       setShowErrorToast(true);
     } finally {
@@ -94,6 +97,25 @@ const SearchPage = () => {
   // Determine button text and navigation target based on authentication state
   const backButtonText = user ? 'Back to Dashboard' : 'Back to Home';
   const backButtonTarget = user ? '/dashboard' : '/';
+  
+  // Before component renders, ensure apiConfig is initialized
+  useEffect(() => {
+    // Make sure apiConfig is initialized
+    if (!apiConfig.isInitialized) {
+      apiConfig.initialize().catch(err => {
+        console.error('Failed to initialize API config:', err);
+        // Fall back to production mode
+        apiConfig.forceProductionMode();
+      });
+    }
+    
+    // Optional: Check API health
+    apiConfig.checkHealth().then(isHealthy => {
+      if (!isHealthy) {
+        console.warn('API health check failed - service may be unavailable');
+      }
+    });
+  }, []);
 
   return (
     <div className="min-vh-100 d-flex flex-column" style={{ background: '#f8fafc' }}>

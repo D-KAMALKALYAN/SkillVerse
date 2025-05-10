@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { 
   CheckCircleFill, 
   Calendar, 
@@ -12,6 +11,19 @@ import {
 import Loading from '../common/Loading';
 import Error from '../common/Error';
 
+// Import apiConfig and apiClient
+import apiConfig from '../../path/to/apiConfig';
+import apiClient, { getErrorMessage } from '../../path/to/apiClient';
+
+/**
+ * CompletedSessionsList Component
+ * 
+ * Displays lists of completed sessions and accepted matches for a user
+ * with improved API handling and error management.
+ * 
+ * @param {Object} props - Component props
+ * @param {string} props.userId - User ID to fetch sessions and matches for
+ */
 const CompletedSessionsList = ({ userId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -27,21 +39,30 @@ const CompletedSessionsList = ({ userId }) => {
       try {
         setLoading(true);
         
-        // Get sessions
-        const sessionsResponse = await axios.get(`/api/sessions/user/${userId}`);
+        // Ensure API is initialized
+        if (!apiConfig.isInitialized) {
+          await apiConfig.initialize();
+        }
+        
+        // Fetch sessions and matches in parallel using apiClient
+        const [sessionsResponse, matchesResponse] = await Promise.all([
+          apiClient.get(`/api/sessions/user/${userId}`),
+          apiClient.get(`/api/matches/user/${userId}`)
+        ]);
+        
+        // Process sessions
         const completed = sessionsResponse.data.sessions.filter(
           session => session.status === 'completed'
         );
         setCompletedSessions(completed);
         
-        // Get matches
-        const matchesResponse = await axios.get(`/api/matches/user/${userId}`);
+        // Process matches
         const accepted = matchesResponse.data.matches.filter(
           match => match.status === 'accepted' || match.status === 'completed'
         );
         setAcceptedMatches(accepted);
         
-        // Collect all user and skill IDs
+        // Collect all user and skill IDs for batch fetching
         const userIds = new Set();
         const skillIds = new Set();
         
@@ -57,39 +78,50 @@ const CompletedSessionsList = ({ userId }) => {
           if (match.skill) skillIds.add(match.skill);
         });
         
-        // Fetch user data
+        // Fetch user data in parallel
         const usersMap = {};
-        for (const id of userIds) {
+        const userPromises = Array.from(userIds).map(async (id) => {
           try {
-            const userResponse = await axios.get(`/api/users/${id}`);
+            const userResponse = await apiClient.get(`/api/users/${id}`);
             usersMap[id] = userResponse.data.user;
           } catch (err) {
             console.error(`Error fetching user ${id}:`, err);
+            // Don't fail the whole operation if one user fetch fails
           }
-        }
-        setUsers(usersMap);
+        });
         
-        // Fetch skill data
+        // Fetch skill data in parallel
         const skillsMap = {};
-        for (const id of skillIds) {
+        const skillPromises = Array.from(skillIds).map(async (id) => {
           try {
-            const skillResponse = await axios.get(`/api/skills/${id}`);
+            const skillResponse = await apiClient.get(`/api/skills/${id}`);
             skillsMap[id] = skillResponse.data.skill;
           } catch (err) {
             console.error(`Error fetching skill ${id}:`, err);
+            // Don't fail the whole operation if one skill fetch fails
           }
-        }
+        });
+        
+        // Wait for all fetches to complete
+        await Promise.all([...userPromises, ...skillPromises]);
+        
+        setUsers(usersMap);
         setSkills(skillsMap);
         
       } catch (err) {
         console.error('Error fetching sessions and matches:', err);
-        setError('Failed to load sessions and matches data');
+        setError(getErrorMessage(err));
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    if (userId) {
+      fetchData();
+    } else {
+      setError('User ID is required to fetch sessions');
+      setLoading(false);
+    }
   }, [userId]);
 
   const handleCreateAssessment = (item, type) => {

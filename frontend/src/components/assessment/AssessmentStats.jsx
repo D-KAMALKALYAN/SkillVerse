@@ -6,8 +6,20 @@ import {
   CheckCircle, 
   ArrowRight 
 } from 'react-bootstrap-icons';
-import axios from 'axios';
 
+// Import the apiConfig and apiClient to leverage their features
+import apiConfig from '../../path/to/apiConfig';
+import apiClient, { getErrorMessage } from '../../path/to/apiClient';
+
+/**
+ * AssessmentStats Component
+ * 
+ * Displays statistics for assessments with improved API handling
+ * and error management using the shared API utilities.
+ * 
+ * @param {Object} props - Component props
+ * @param {string} props.skillId - Optional skill ID to filter stats
+ */
 const AssessmentStats = ({ skillId }) => {
   const [stats, setStats] = useState({
     totalAssessments: 0,
@@ -24,6 +36,11 @@ const AssessmentStats = ({ skillId }) => {
         setLoading(true);
         console.log('Fetching stats for skillId:', skillId || 'general');
         
+        // Ensure API is initialized
+        if (!apiConfig.isInitialized) {
+          await apiConfig.initialize();
+        }
+        
         // Determine the correct endpoint based on presence of skillId
         const endpoint = skillId 
           ? `/api/assessments/${skillId}/assessment-stats` 
@@ -31,21 +48,8 @@ const AssessmentStats = ({ skillId }) => {
         
         console.log('Using endpoint:', endpoint);
         
-        // Get the token from localStorage or wherever you store it
-        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-        
-        if (!token) {
-          console.warn('No authentication token found');
-        }
-        
-        const response = await axios.get(endpoint, {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': token ? `Bearer ${token}` : '',
-            // Add this to help with CORS if needed
-            'Accept': 'application/json'
-          }
-        });
+        // Use apiClient which handles auth tokens automatically
+        const response = await apiClient.get(endpoint);
 
         console.log('Response received:', response.data);
 
@@ -77,20 +81,17 @@ const AssessmentStats = ({ skillId }) => {
       } catch (err) {
         console.error('Error fetching assessment stats:', err);
         
-        // More detailed error logging
-        if (err.response) {
-          // Server responded with a status code outside the 2xx range
-          console.error('Server error response:', err.response.data);
-          console.error('Status code:', err.response.status);
-          setError(`Server error: ${err.response.status} - ${err.response.data?.message || 'Unknown error'}`);
-        } else if (err.request) {
-          // Request was made but no response received
-          console.error('No response received:', err.request);
-          setError('No response received from server. Check your network connection.');
-        } else {
-          // Something happened in setting up the request
-          console.error('Request setup error:', err.message);
-          setError(`Error: ${err.message}`);
+        // Use the getErrorMessage utility to get a user-friendly error message
+        setError(getErrorMessage(err));
+        
+        // Additional logging for debugging
+        if (!apiConfig.isProduction) {
+          if (err.response) {
+            console.error('Server error response:', err.response.data);
+            console.error('Status code:', err.response.status);
+          } else if (err.request) {
+            console.error('No response received:', err.request);
+          }
         }
       } finally {
         setLoading(false);

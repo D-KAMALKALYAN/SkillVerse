@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import { socket } from '../../services/socketService';
 import Loading from '../common/Loading';
 import Error from '../common/Error';
+import apiClient, { getErrorMessage } from '../../services/apiClient';
+import apiConfig from '../../services/apiConfig';
 import { 
   FileEarmarkPdf, 
   CloudUpload, 
@@ -34,31 +35,19 @@ const SubmitAssessment = () => {
       try {
         setLoading(true);
         
-        const response = await fetch(`/api/assessments/${assessmentId}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          }
-        });
+        const response = await apiClient.get(`/assessments/${assessmentId}`);
         
-        if (!response.ok) {
-          throw new Error(`Failed to fetch assessment: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        if (data.success && data.assessment) {
-          setAssessment(data.assessment);
+        if (response.data.success && response.data.assessment) {
+          setAssessment(response.data.assessment);
           
           // Check if the assessment is already submitted
-          if (data.assessment.status === 'submitted' || data.assessment.status === 'evaluated') {
+          if (response.data.assessment.status === 'submitted' || response.data.assessment.status === 'evaluated') {
             setIsSubmitted(true);
           }
           
           // Calculate time remaining if due date exists
-          if (data.assessment.dueDate) {
-            const dueDate = new Date(data.assessment.dueDate);
+          if (response.data.assessment.dueDate) {
+            const dueDate = new Date(response.data.assessment.dueDate);
             const now = new Date();
             const diffTime = dueDate - now;
             if (diffTime > 0) {
@@ -74,7 +63,7 @@ const SubmitAssessment = () => {
         }
       } catch (err) {
         console.error('Error:', err);
-        setError(err.message || 'Failed to load assessment');
+        setError(getErrorMessage(err));
       } finally {
         setLoading(false);
       }
@@ -142,20 +131,20 @@ const SubmitAssessment = () => {
     formData.append('answersPdf', answersPdf);
     
     try {
+      // Update headers for the specific request to handle file upload
       const headers = {
         'Content-Type': 'multipart/form-data',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
         'X-Socket-ID': socket?.id || ''
       };
 
-      const response = await axios.post('/api/assessments/submit', formData, { headers });
+      const response = await apiClient.post('/assessments/submit', formData, { headers });
     
       if (response.data.success) {
         // Instead of redirecting to another page, update the UI to show submission successful
         setIsSubmitted(true);
       }
-    } catch (error) {
-      setError(error.response?.data?.message || 'Error submitting assessment');
+    } catch (err) {
+      setError(getErrorMessage(err));
     } finally {
       setSubmitting(false);
     }

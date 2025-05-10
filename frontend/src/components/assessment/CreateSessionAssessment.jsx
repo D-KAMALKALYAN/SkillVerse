@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { Form, Button, Alert, Card } from 'react-bootstrap';
 import { Calendar, CheckCircle, PlusCircle, FileEarmarkPdf, X } from 'react-bootstrap-icons';
 import Loading from '../common/Loading';
 import Error from '../common/Error';
+import apiClient, { getErrorMessage } from '../../services/apiClient';
+import apiConfig from '../../services/apiConfig';
 
 const CreateSessionAssessment = ({ userId, initialSession = null, onComplete }) => {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ const CreateSessionAssessment = ({ userId, initialSession = null, onComplete }) 
     questions: [{ text: '', points: 10 }],
     dueDate: '',
     status: 'active',
-    passingScore: 70 // Add this line
+    passingScore: 70
   });
   const [pdfFile, setPdfFile] = useState(null);
   const [pdfFileName, setPdfFileName] = useState('');
@@ -34,22 +35,10 @@ const CreateSessionAssessment = ({ userId, initialSession = null, onComplete }) 
         setLoading(true);
         if (!userId) return;
   
-        // Fetch completed sessions where the user was a teacher using fetch API
-        const response = await fetch(`/api/sessions/user/${userId}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          },
-          cache: 'no-store' // Prevent caching
-        });
+        // Fetch completed sessions where the user was a teacher using apiClient
+        const response = await apiClient.get(`/sessions/user/${userId}`);
   
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-  
-        const data = await response.json();
-        const teachingSessions = data.sessions.filter(
+        const teachingSessions = response.data.sessions.filter(
           session => session.status === 'completed' && session.isTeaching === true
         );
         setCompletedSessions(teachingSessions);
@@ -61,7 +50,7 @@ const CreateSessionAssessment = ({ userId, initialSession = null, onComplete }) 
         }
       } catch (err) {
         console.error('Error fetching sessions:', err);
-        setError('Failed to load sessions. Please try again.');
+        setError(getErrorMessage(err));
       } finally {
         setLoading(false);
       }
@@ -71,8 +60,6 @@ const CreateSessionAssessment = ({ userId, initialSession = null, onComplete }) 
   }, [userId, initialSession]);
 
   const populateFormFromSession = (session) => {
-
-    // console.log("populateFormFromSession called with session:", session);
     // Extract notes and create questions based on session content
     const sessionNotes = session.notes || '';
     const defaultTitle = `${session.skillDetails?.title || 'Skill'} Assessment`;
@@ -96,7 +83,7 @@ const CreateSessionAssessment = ({ userId, initialSession = null, onComplete }) 
       questions: defaultQuestions,
       dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Due in 7 days
       status: 'active',
-      passingScore: 70 // Add this line
+      passingScore: 70
     });
   };
 
@@ -179,45 +166,25 @@ const CreateSessionAssessment = ({ userId, initialSession = null, onComplete }) 
       setSubmitting(true);
       setError('');
       
-      // Create FormData if there's a PDF to upload
-      let assessmentData = formData;
       let response;
       
       if (pdfFile) {
         const formDataObj = new FormData();
         formDataObj.append('questionsPdf', pdfFile);
-        // console.log("Sending assessment data:", JSON.stringify(formData));
-        
         formDataObj.append('assessmentData', JSON.stringify(formData));
         
-        // Upload with PDF file
-        response = await fetch('/api/assessments/create', {
-          method: 'POST',
+        // Upload with PDF file using apiClient
+        response = await apiClient.post('/assessments/create', formDataObj, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          },
-          body: formDataObj,
+            'Content-Type': 'multipart/form-data'
+          }
         });
       } else {
-        // Create the assessment using fetch API without PDF
-        response = await fetch('/api/assessments', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          },
-          body: JSON.stringify(formData),
-          cache: 'no-store'
-        });
+        // Create the assessment using apiClient without PDF
+        response = await apiClient.post('/assessments', formData);
       }
   
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-  
-      const data = await response.json();
-      
-      if (data.success) {
+      if (response.data.success) {
         setSuccess('Assessment created successfully!');
         setTimeout(() => {
           if (onComplete) {
@@ -229,7 +196,7 @@ const CreateSessionAssessment = ({ userId, initialSession = null, onComplete }) 
       }
     } catch (err) {
       console.error('Error creating assessment:', err);
-      setError('Failed to create assessment. Please try again.');
+      setError(getErrorMessage(err));
     } finally {
       setSubmitting(false);
     }

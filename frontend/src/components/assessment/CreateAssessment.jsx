@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { socket } from '../../services/socketService';
+import apiClient, { getErrorMessage } from '../../services/apiClient';
 
 const CreateAssessment = ({ skillId }) => {
   const navigate = useNavigate();
@@ -47,18 +47,20 @@ const CreateAssessment = ({ skillId }) => {
     
     try {
       // Add socket ID to headers for socket.io notifications
-      const headers = {
-        'Content-Type': 'multipart/form-data',
-        'X-Socket-ID': socket?.id || ''
+      const config = {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'X-Socket-ID': socket?.id || ''
+        }
       };
       
-      const response = await axios.post('/api/assessments/create', formData, { headers });
+      const response = await apiClient.post('/assessments/create', formData, config);
       
       if (response.data.success) {
         navigate(`/skills/${skillId}/assessments`);
       }
     } catch (error) {
-      setError(error.response?.data?.message || 'Error creating assessment');
+      setError(getErrorMessage(error));
     } finally {
       setLoading(false);
     }
