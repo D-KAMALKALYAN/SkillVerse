@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { Form, Button, Container, Card, Alert, Row, Col, InputGroup, Accordion } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { Form, Button, Container, Card, Alert, Row, Col, InputGroup, Accordion, Spinner } from 'react-bootstrap';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import api from '../services/api';
-import { FaUser, FaEnvelope, FaLock, FaEye, FaEyeSlash, FaUserPlus, FaGlobe, FaShieldAlt } from 'react-icons/fa';
+import apiConfig from '../config/apiConfig';
+import { getErrorMessage } from '../config/apiConfig';
+import { FaUser, FaEnvelope, FaLock, FaEye, FaEyeSlash, FaUserPlus, FaGlobe, FaShieldAlt, FaExclamationTriangle } from 'react-icons/fa';
 
 // List of countries for the dropdown
 const COUNTRIES = [
@@ -12,7 +13,7 @@ const COUNTRIES = [
   "Italy", "Netherlands", "Sweden", "South Korea", "Russia", "Other"
 ];
 
-// List of security questions to choose from
+// Enhanced list of security questions
 const SECURITY_QUESTIONS = [
   "What was the name of your first pet?",
   "In what city were you born?",
@@ -21,8 +22,24 @@ const SECURITY_QUESTIONS = [
   "What was the make of your first car?",
   "What was your childhood nickname?",
   "What is the name of your favorite childhood friend?",
-  "What street did you grow up on?"
+  "What street did you grow up on?",
+  "What was your first phone number?",
+  "What was the name of your first teacher?",
+  "What is your favorite book?",
+  "What is the name of the place your wedding reception was held?",
+  "What is the name of your favorite movie?",
+  "What was your first job?",
+  "What is your father's middle name?"
 ];
+
+// Password validation regex
+const PASSWORD_REGEX = {
+  minLength: /.{8,}/,
+  hasUpperCase: /[A-Z]/,
+  hasLowerCase: /[a-z]/,
+  hasNumber: /[0-9]/,
+  hasSpecialChar: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/
+};
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -40,27 +57,158 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [apiHealthy, setApiHealthy] = useState(true);
+  const [passwordStrength, setPasswordStrength] = useState({
+    score: 0,
+    feedback: []
+  });
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // Check API health on component mount
+  useEffect(() => {
+    const checkApiHealth = async () => {
+      try {
+        const isHealthy = await apiConfig.checkHealth();
+        setApiHealthy(isHealthy);
+        
+        if (!isHealthy) {
+          setMessage({
+            type: 'warning',
+            text: 'We are experiencing connectivity issues with our servers. Please try again later or check your internet connection.'
+          });
+        }
+      } catch (error) {
+        console.error('API health check failed:', error);
+        setApiHealthy(false);
+        setMessage({
+          type: 'warning',
+          text: 'Unable to connect to our servers. Please try again later.'
+        });
+      }
+    };
+    
+    checkApiHealth();
+  }, []);
 
-    if (formData.password !== formData.confirmPassword) {
-      return setMessage({ type: 'danger', text: 'Passwords do not match. Please ensure both passwords are identical.' });
+  // Password strength checker
+  const checkPasswordStrength = (password) => {
+    if (!password) {
+      return { score: 0, feedback: [] };
     }
 
-    // Validate security questions
+    let score = 0;
+    const feedback = [];
+
+    if (PASSWORD_REGEX.minLength.test(password)) {
+      score += 1;
+    } else {
+      feedback.push('Password should be at least 8 characters');
+    }
+
+    if (PASSWORD_REGEX.hasUpperCase.test(password)) {
+      score += 1;
+    } else {
+      feedback.push('Include at least one uppercase letter');
+    }
+
+    if (PASSWORD_REGEX.hasLowerCase.test(password)) {
+      score += 1;
+    } else {
+      feedback.push('Include at least one lowercase letter');
+    }
+
+    if (PASSWORD_REGEX.hasNumber.test(password)) {
+      score += 1;
+    } else {
+      feedback.push('Include at least one number');
+    }
+
+    if (PASSWORD_REGEX.hasSpecialChar.test(password)) {
+      score += 1;
+    } else {
+      feedback.push('Include at least one special character');
+    }
+
+    return { score, feedback };
+  };
+
+  const handlePasswordChange = (e) => {
+    const password = e.target.value;
+    setFormData({ ...formData, password });
+    setPasswordStrength(checkPasswordStrength(password));
+  };
+
+  const validateForm = () => {
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setMessage({ type: 'danger', text: 'Please enter a valid email address.' });
+      return false;
+    }
+
+    // Password matching validation
+    if (formData.password !== formData.confirmPassword) {
+      setMessage({ type: 'danger', text: 'Passwords do not match. Please ensure both passwords are identical.' });
+      return false;
+    }
+
+    // Password strength validation
+    if (passwordStrength.score < 3) {
+      setMessage({ 
+        type: 'danger', 
+        text: 'Please create a stronger password. ' + passwordStrength.feedback.join('. ')
+      });
+      return false;
+    }
+
+    // Required fields validation
+    if (!formData.name.trim() || !formData.country) {
+      setMessage({ type: 'danger', text: 'Please fill in all required fields.' });
+      return false;
+    }
+
+    // Security questions validation
     const hasEmptyAnswers = formData.securityQuestions.some(q => !q.answer.trim());
     if (hasEmptyAnswers) {
-      return setMessage({ type: 'danger', text: 'Please answer all security questions. They are required for account recovery.' });
+      setMessage({ type: 'danger', text: 'Please answer all security questions. They are required for account recovery.' });
+      return false;
     }
 
+    // Duplicate security questions validation
+    const questions = formData.securityQuestions.map(q => q.question);
+    if (new Set(questions).size !== questions.length) {
+      setMessage({ type: 'danger', text: 'Please select different security questions. Duplicate questions are not allowed.' });
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!apiHealthy) {
+      setMessage({ 
+        type: 'warning', 
+        text: 'Unable to connect to our servers. Please check your internet connection and try again.' 
+      });
+      return;
+    }
+
+    // Clear previous messages
     setMessage({ type: '', text: '' });
+    
+    // Validate form before submission
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const response = await api.post('/auth/register', {
+      // Use apiConfig.client instead of direct API call
+      const response = await apiConfig.client.post(apiConfig.ENDPOINTS.AUTH.REGISTER, {
         name: formData.name,
         email: formData.email,
         password: formData.password,
@@ -68,14 +216,24 @@ const Register = () => {
         securityQuestions: formData.securityQuestions
       });
 
-      login(response.data);
-      setMessage({ type: 'success', text: 'User successfully created! Redirecting to login...' });
-      
-      // Simulate a delay to show success message
-      setTimeout(() => navigate('/login'), 1500);
+      if (response.data) {
+        login(response.data);
+        setMessage({ 
+          type: 'success', 
+          text: 'Account created successfully! Redirecting to login...' 
+        });
+        
+        // Simulate a delay to show success message
+        setTimeout(() => navigate('/login'), 1500);
+      } else {
+        throw new Error('No data received from server');
+      }
     } catch (err) {
-      const errorMsg = err.response?.data?.msg || 'Registration failed. Please try again.';
+      const errorMsg = getErrorMessage(err);
       setMessage({ type: 'danger', text: errorMsg });
+      
+      // Log error for debugging
+      console.error('Registration error:', err);
     } finally {
       setLoading(false);
     }
@@ -84,6 +242,47 @@ const Register = () => {
   const handleSecurityQuestionChange = (index, field, value) => {
     const updatedQuestions = [...formData.securityQuestions];
     updatedQuestions[index][field] = value;
+    setFormData({
+      ...formData,
+      securityQuestions: updatedQuestions
+    });
+  };
+
+  const addSecurityQuestion = () => {
+    if (formData.securityQuestions.length >= 3) {
+      setMessage({ 
+        type: 'warning', 
+        text: 'Maximum of 3 security questions allowed.' 
+      });
+      return;
+    }
+
+    // Find an unused question
+    const usedQuestions = formData.securityQuestions.map(q => q.question);
+    const unusedQuestion = SECURITY_QUESTIONS.find(q => !usedQuestions.includes(q));
+
+    if (unusedQuestion) {
+      setFormData({
+        ...formData,
+        securityQuestions: [
+          ...formData.securityQuestions,
+          { question: unusedQuestion, answer: '' }
+        ]
+      });
+    }
+  };
+
+  const removeSecurityQuestion = (index) => {
+    if (formData.securityQuestions.length <= 2) {
+      setMessage({ 
+        type: 'warning', 
+        text: 'At least 2 security questions are required.' 
+      });
+      return;
+    }
+
+    const updatedQuestions = [...formData.securityQuestions];
+    updatedQuestions.splice(index, 1);
     setFormData({
       ...formData,
       securityQuestions: updatedQuestions
@@ -121,7 +320,8 @@ const Register = () => {
       icon: <FaLock className="text-primary" />,
       toggleIcon: showPassword ? 
         <FaEyeSlash className="text-muted" onClick={() => setShowPassword(!showPassword)} /> : 
-        <FaEye className="text-muted" onClick={() => setShowPassword(!showPassword)} />
+        <FaEye className="text-muted" onClick={() => setShowPassword(!showPassword)} />,
+      onChange: handlePasswordChange
     },
     { 
       id: 'confirmPassword',
@@ -134,6 +334,52 @@ const Register = () => {
         <FaEye className="text-muted" onClick={() => setShowConfirmPassword(!showConfirmPassword)} />
     }
   ];
+
+  // Password strength indicator
+  const renderPasswordStrength = () => {
+    if (!formData.password) return null;
+    
+    const getStrengthLabel = () => {
+      if (passwordStrength.score === 0) return 'Very Weak';
+      if (passwordStrength.score === 1) return 'Weak';
+      if (passwordStrength.score === 2) return 'Fair';
+      if (passwordStrength.score === 3) return 'Good';
+      if (passwordStrength.score === 4) return 'Strong';
+      return 'Very Strong';
+    };
+    
+    const getStrengthColor = () => {
+      if (passwordStrength.score <= 1) return 'danger';
+      if (passwordStrength.score === 2) return 'warning';
+      if (passwordStrength.score === 3) return 'info';
+      return 'success';
+    };
+    
+    return (
+      <div className="mt-2">
+        <div className="d-flex justify-content-between align-items-center mb-1">
+          <small>Password Strength: <span className={`text-${getStrengthColor()}`}>{getStrengthLabel()}</span></small>
+        </div>
+        <div className="progress" style={{ height: '5px' }}>
+          <div 
+            className={`progress-bar bg-${getStrengthColor()}`} 
+            role="progressbar" 
+            style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
+            aria-valuenow={(passwordStrength.score / 5) * 100}
+            aria-valuemin="0" 
+            aria-valuemax="100"
+          ></div>
+        </div>
+        {passwordStrength.feedback.length > 0 && (
+          <ul className="ps-3 mt-1 mb-0" style={{ fontSize: '0.75rem' }}>
+            {passwordStrength.feedback.map((tip, index) => (
+              <li key={index} className="text-muted">{tip}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="register-page bg-light">
@@ -188,6 +434,18 @@ const Register = () => {
                 <p className="text-muted">Exchange skills, grow together</p>
               </div>
 
+              {!apiHealthy && (
+                <Alert variant="warning" className="mb-4">
+                  <div className="d-flex align-items-center">
+                    <FaExclamationTriangle className="me-2" />
+                    <div>
+                      <strong>Connection Issue</strong>
+                      <div>We're having trouble connecting to our servers. Please check your internet connection.</div>
+                    </div>
+                  </div>
+                </Alert>
+              )}
+
               <Card className="border-0 shadow-sm rounded-3">
                 <Card.Body className="p-4 p-md-5">
                   <h2 className="text-center mb-4 fw-bold">Create Account</h2>
@@ -227,7 +485,7 @@ const Register = () => {
                               type={field.type}
                               placeholder={field.placeholder}
                               value={formData[field.id]}
-                              onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
+                              onChange={field.onChange || ((e) => setFormData({ ...formData, [field.id]: e.target.value }))}
                               required
                               className="py-2"
                             />
@@ -241,11 +499,12 @@ const Register = () => {
                             </InputGroup.Text>
                           )}
                         </InputGroup>
+                        {field.id === 'password' && renderPasswordStrength()}
                       </Form.Group>
                     ))}
 
                     {/* Security Questions Section */}
-                    <Accordion className="mb-4">
+                    <Accordion className="mb-4" defaultActiveKey="0">
                       <Accordion.Item eventKey="0">
                         <Accordion.Header>
                           <div className="d-flex align-items-center">
@@ -260,9 +519,22 @@ const Register = () => {
                           </p>
                           
                           {formData.securityQuestions.map((q, index) => (
-                            <div key={index} className="mb-3">
+                            <div key={index} className="mb-3 pb-3 border-bottom">
+                              <div className="d-flex justify-content-between align-items-center mb-2">
+                                <h6 className="mb-0">Question {index + 1}</h6>
+                                {index >= 2 && (
+                                  <Button 
+                                    variant="outline-danger" 
+                                    size="sm"
+                                    onClick={() => removeSecurityQuestion(index)}
+                                  >
+                                    Remove
+                                  </Button>
+                                )}
+                              </div>
+                              
                               <Form.Group className="mb-2">
-                                <Form.Label>Question {index + 1}</Form.Label>
+                                <Form.Label>Select Question</Form.Label>
                                 <Form.Select
                                   value={q.question}
                                   onChange={(e) => handleSecurityQuestionChange(index, 'question', e.target.value)}
@@ -289,6 +561,18 @@ const Register = () => {
                               </Form.Group>
                             </div>
                           ))}
+                          
+                          {formData.securityQuestions.length < 3 && (
+                            <div className="d-grid mt-3">
+                              <Button 
+                                variant="outline-primary" 
+                                size="sm"
+                                onClick={addSecurityQuestion}
+                              >
+                                Add Another Question (Optional)
+                              </Button>
+                            </div>
+                          )}
                         </Accordion.Body>
                       </Accordion.Item>
                     </Accordion>
@@ -299,9 +583,18 @@ const Register = () => {
                         variant="primary" 
                         size="lg" 
                         className="py-2"
-                        disabled={loading}
+                        disabled={loading || !apiHealthy}
                       >
-                        {loading ? 'Creating Account...' : 'Create Account'} <FaUserPlus className="ms-2" />
+                        {loading ? (
+                          <>
+                            <Spinner animation="border" size="sm" className="me-2" />
+                            Creating Account...
+                          </>
+                        ) : (
+                          <>
+                            Create Account <FaUserPlus className="ms-2" />
+                          </>
+                        )}
                       </Button>
                     </div>
 
@@ -314,6 +607,12 @@ const Register = () => {
                   </Form>
                 </Card.Body>
               </Card>
+              
+              <div className="mt-4 text-center small text-muted">
+                By creating an account, you agree to our{' '}
+                <Link to="/terms" className="text-decoration-none">Terms of Service</Link> and{' '}
+                <Link to="/privacy" className="text-decoration-none">Privacy Policy</Link>
+              </div>
             </Container>
           </Col>
         </Row>
