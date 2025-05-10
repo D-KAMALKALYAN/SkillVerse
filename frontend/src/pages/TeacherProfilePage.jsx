@@ -15,8 +15,8 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 
 // Import apiClient and apiConfig instead of axios directly
-import apiClient, { getErrorMessage, isNetworkError } from './apiClient';
-import apiConfig from './apiConfig';
+import apiClient, { getErrorMessage, isNetworkError } from '../config/apiClient';
+import apiConfig from '../config/apiConfig';
 
 const TeacherProfilePage = () => {
   const { teacherId } = useParams();

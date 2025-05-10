@@ -8,8 +8,8 @@ import {
 } from 'react-bootstrap-icons';
 
 // Import the apiConfig and apiClient to leverage their features
-import apiConfig from '../../path/to/apiConfig';
-import apiClient, { getErrorMessage } from '../../path/to/apiClient';
+import apiConfig from '../../config/apiConfig';
+import apiClient, { getErrorMessage } from '../../config/apiClient';
 
 /**
  * AssessmentStats Component

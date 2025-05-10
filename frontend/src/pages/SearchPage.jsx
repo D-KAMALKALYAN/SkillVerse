@@ -5,8 +5,8 @@ import SearchBar from '../components/search/SearchBar';
 import SearchResults from '../components/search/SearchResults';
 import { ArrowLeft, Search, InfoCircle, MortarboardFill, BookFill } from 'react-bootstrap-icons';
 import { useAuth } from '../context/AuthContext';
-import apiClient, { getErrorMessage } from '../utils/apiClient';
-import apiConfig from '../utils/apiConfig';
+import apiClient, { getErrorMessage } from '../config/apiClient';
+import apiConfig from '../config/apiConfig';
 
 const SearchPage = () => {
   const [searchResults, setSearchResults] = useState([]);

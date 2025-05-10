@@ -5,8 +5,8 @@
  * automatic token management, and environment-aware URL configuration.
  */
 
-import apiConfig from '../../../path/to/apiConfig';
-import apiClient, { getErrorMessage } from '../../../path/to/apiClient';
+import apiConfig from '../../../config/apiConfig';
+import apiClient, { getErrorMessage } from '../../../config/apiClient';
 
 /**
  * Fetch leaderboard data with improved error handling

@@ -4,8 +4,8 @@ import { Form, Button, Alert, Card } from 'react-bootstrap';
 import { Calendar, CheckCircle, PlusCircle, FileEarmarkPdf, X } from 'react-bootstrap-icons';
 import Loading from '../common/Loading';
 import Error from '../common/Error';
-import apiClient, { getErrorMessage } from '../../services/apiClient';
-import apiConfig from '../../services/apiConfig';
+import apiClient, { getErrorMessage } from '../../config/apiClient';
+import apiConfig from '../../config/apiConfig';
 
 const CreateSessionAssessment = ({ userId, initialSession = null, onComplete }) => {
   const navigate = useNavigate();

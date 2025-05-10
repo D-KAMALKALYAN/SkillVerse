@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { socket } from '../../services/socketService';
-import apiClient, { getErrorMessage } from '../../services/apiClient';
+import apiClient, { getErrorMessage } from '../../config/apiClient';
 
 const CreateAssessment = ({ skillId }) => {
   const navigate = useNavigate();
