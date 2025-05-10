@@ -6,7 +6,6 @@ import axios from 'axios';
 import { fetchRequestCounts } from './dashboardUtils'; // Update with correct path
 
 import apiConfig from '../../config/apiConfig';
-import apiClient from '../../config/apiClient';
 const BACKEND_URL = apiConfig.BACKEND_URL;
 
 const UserWelcomeCard = ({ 
@@ -88,7 +87,16 @@ const UserWelcomeCard = ({
       
       try {
         // Fetch leaderboard data
-        const leaderboardResponse = await axios.get('/api/points/leaderboard');
+        // const leaderboardResponse = await axios.get('/api/points/leaderboard');
+        
+          const leaderboardUrl = `${apiConfig.API_URL}${apiConfig.ENDPOINTS.POINTS.LEADERBOARD}`;
+        console.log(`[Leaderboard] Fetching from: ${leaderboardUrl}`);
+        
+        // Fetch leaderboard data with proper headers
+        const token = localStorage.getItem('token');
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        
+        const leaderboardResponse = await axios.get(leaderboardUrl, { headers });
         
         if (leaderboardResponse.data.success) {
           setLeaderboardData(leaderboardResponse.data.leaderboard);
@@ -96,29 +104,89 @@ const UserWelcomeCard = ({
           throw new Error('Failed to fetch leaderboard data');
         }
         
-        // Fetch user's rank if user is logged in
-        if (user && user._id) {
-          const userRankResponse = await axios.get('/api/points/user-rank', {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-          });
+    //     // Fetch user's rank if user is logged in
+    //     if (user && user._id) {
+    //       const userRankResponse = await axios.get('/api/points/user-rank', {
+    //         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    //       });
           
-          if (userRankResponse.data.success) {
-            setUserRank(userRankResponse.data.rank);
+    //       if (userRankResponse.data.success) {
+    //         setUserRank(userRankResponse.data.rank);
+    //       } else {
+    //         // If we can't fetch the rank, we can search for the user in the full leaderboard
+    //         const allLeaderboardResponse = await axios.get('/api/points/leaderboard?limit=0');
+    //         if (allLeaderboardResponse.data.success) {
+    //           const allUsers = allLeaderboardResponse.data.leaderboard;
+    //           const userIndex = allUsers.findIndex(entry => entry.userId === user._id);
+    //           if (userIndex !== -1) {
+    //             setUserRank(userIndex + 1);
+    //           }
+    //         }
+    //       }
+    //     }
+    //   } catch (error) {
+    //     console.error('Error fetching leaderboard data:', error);
+    //     setLeaderboardError('Failed to load leaderboard data');
+    //   } finally {
+    //     setIsLoadingLeaderboard(false);
+    //   }
+    // };
+
+          // Fetch user's rank if user is logged in
+        if (user && user._id) {
+          // Use apiConfig client if available
+          if (apiConfig.client) {
+            const userRankResponse = await apiConfig.client.get(`/points/user-rank`);
+            
+            if (userRankResponse.data && userRankResponse.data.success) {
+              setUserRank(userRankResponse.data.rank);
+            }
           } else {
-            // If we can't fetch the rank, we can search for the user in the full leaderboard
-            const allLeaderboardResponse = await axios.get('/api/points/leaderboard?limit=0');
-            if (allLeaderboardResponse.data.success) {
-              const allUsers = allLeaderboardResponse.data.leaderboard;
-              const userIndex = allUsers.findIndex(entry => entry.userId === user._id);
-              if (userIndex !== -1) {
-                setUserRank(userIndex + 1);
+            // Fallback to direct axios call if client not available
+            const userRankUrl = `${apiConfig.API_URL}/points/user-rank`;
+            const userRankResponse = await axios.get(userRankUrl, { headers });
+            
+            if (userRankResponse.data && userRankResponse.data.success) {
+              setUserRank(userRankResponse.data.rank);
+            }
+          }
+          
+          // If we still don't have a rank, try to find user in complete leaderboard
+          if (userRank === null) {
+            try {
+              const allLeaderboardUrl = `${apiConfig.API_URL}${apiConfig.ENDPOINTS.POINTS.LEADERBOARD}?limit=0`;
+              const allLeaderboardResponse = await axios.get(allLeaderboardUrl, { headers });
+              
+              if (allLeaderboardResponse.data && allLeaderboardResponse.data.success) {
+                const allUsers = allLeaderboardResponse.data.leaderboard;
+                const userIndex = allUsers.findIndex(entry => entry.userId === user._id);
+                if (userIndex !== -1) {
+                  setUserRank(userIndex + 1);
+                }
               }
+            } catch (rankError) {
+              console.warn('Could not determine user rank:', rankError);
+              // Don't set an error state here, just leave rank as null
             }
           }
         }
       } catch (error) {
         console.error('Error fetching leaderboard data:', error);
         setLeaderboardError('Failed to load leaderboard data');
+        
+        // Use mock data for development if API is unavailable
+        if (!apiConfig.isProduction) {
+          console.log('[DEV] Using mock leaderboard data');
+          setLeaderboardData([
+            { userId: 'user1', name: 'John Smith', points: 450, streak: 3 },
+            { userId: 'user2', name: 'Maria Garcia', points: 380, streak: 5 },
+            { userId: 'user3', name: 'Alex Wong', points: 310, streak: 2 },
+            { userId: 'user4', name: 'Sarah Johnson', points: 270, streak: 1 },
+            { userId: 'user5', name: 'David Lee', points: 220, streak: 4 }
+          ]);
+          setUserRank(6); // Mock user rank
+          setLeaderboardError(null); // Clear error when using mock data
+        }
       } finally {
         setIsLoadingLeaderboard(false);
       }
