@@ -61,12 +61,15 @@ async function initializeApp() {
     // CORS setup
     const allowedOrigins = [
       process.env.CLIENT_URL || 'http://localhost:3000',
-      'https://skillverse-frontend.onrender.com'
+      'https://skillverse-frontend.onrender.com',
+      'http://localhost:5173',
+      'http://127.0.0.1:5173'
     ];
     
     app.use(cors({
       origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin || allowedOrigins.some(allowed => origin.startsWith(allowed))) {
           callback(null, true);
         } else {
           console.log(`Origin ${origin} not allowed by CORS`);
@@ -93,7 +96,7 @@ async function initializeApp() {
       
       directories.forEach(dir => {
         if (!fs.existsSync(dir)) {
-          fs.mkdirSync(dir);
+          fs.mkdirSync(dir, { recursive: true });
         }
       });
       
@@ -151,6 +154,12 @@ async function initializeApp() {
       });
     });
     
+    // Add a health check endpoint that works in both environments
+    app.get('/health', (req, res) => {
+      res.status(200).json({ status: 'success', environment: NODE_ENV });
+    });
+    
+    // For backward compatibility
     app.get('/api/health', (req, res) => {
       res.status(200).json({ status: 'success', environment: NODE_ENV });
     });
@@ -196,7 +205,11 @@ async function initializeApp() {
       if (fs.existsSync(clientBuildPath)) {
         app.use(express.static(clientBuildPath));
         app.get('*', (req, res) => {
-          res.sendFile(path.resolve(clientBuildPath, 'index.html'));
+          if (!req.path.startsWith('/api/') && !req.path.startsWith('/health')) {
+            res.sendFile(path.resolve(clientBuildPath, 'index.html'));
+          } else {
+            next();
+          }
         });
       }
     }
@@ -227,7 +240,10 @@ async function initializeApp() {
     // Handle unhandled promise rejections
     process.on('unhandledRejection', (err) => {
       console.error(`Unhandled Rejection: ${err.message}`);
-      server.close(() => process.exit(1));
+      // Don't exit the process in production to maintain uptime
+      if (NODE_ENV !== 'production') {
+        server.close(() => process.exit(1));
+      }
     });
     
     return server;
@@ -241,7 +257,9 @@ async function initializeApp() {
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
   console.error(`Uncaught Exception: ${err.message}`);
-  process.exit(1);
+  if (process.env.NODE_ENV !== 'production') {
+    process.exit(1);
+  }
 });
 
 // Graceful shutdown

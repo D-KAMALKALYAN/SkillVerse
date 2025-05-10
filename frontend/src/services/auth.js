@@ -3,9 +3,9 @@
  * 
  * Handles user authentication with improved error handling and connection resilience.
  */
-
-import apiClient, { isNetworkError, getErrorMessage } from '../config/apiClient';
+import apiClient, { isNetworkError, getErrorMessage, checkApiHealth } from '../config/apiClient';
 import apiConfig from '../config/apiConfig';
+import axios from 'axios';
 
 /**
  * Login user
@@ -19,9 +19,17 @@ export const login = async (credentials) => {
     throw new Error('Email and password are required');
   }
   
-  // The actual route structure is /api/auth/login, but our apiClient already has /api/ as the base URL
-// So we need to use /auth/login instead of just /auth/login
-const loginEndpoint = `${apiConfig.ENDPOINTS.AUTH.LOGIN}`;
+  // Check API health before attempting login
+  const isHealthy = await checkApiHealth();
+  if (!isHealthy && !apiConfig.isProduction) {
+    console.log('[Auth] Development API not available, switching to production');
+    apiConfig.forceProductionMode();
+  } else if (!isHealthy) {
+    console.warn('[Auth] API health check failed, but proceeding with login attempt');
+  }
+  
+  // The endpoint path relative to the base URL
+  const loginEndpoint = `${apiConfig.ENDPOINTS.AUTH.LOGIN}`;
   console.log(`[Auth] Attempting login with endpoint: ${loginEndpoint}`);
   
   try {
@@ -56,9 +64,8 @@ const loginEndpoint = `${apiConfig.ENDPOINTS.AUTH.LOGIN}`;
         apiConfig.forceProductionMode();
         
         try {
-          // Try login again (apiClient will use the updated base URL from apiConfig)
-          // When retrying, make sure to use the same endpoint structure
-const retryResponse = await apiClient.post(loginEndpoint, credentials);
+          // Try login again with updated API config
+          const retryResponse = await apiClient.post(loginEndpoint, credentials);
           
           // Store token and user info
           if (retryResponse.data?.token) {
@@ -77,52 +84,51 @@ const retryResponse = await apiClient.post(loginEndpoint, credentials);
           return retryResponse.data;
         } catch (fallbackError) {
           console.error('[Auth] Fallback login failed:', fallbackError.message);
-          throw new Error('Unable to connect to the server. Please check your internet connection or try again later.');
+          
+          // Try direct axios call as last resort
+          try {
+            console.log('[Auth] Attempting direct axios call to bypass apiClient');
+            const directUrl = `${apiConfig.API_URL}${loginEndpoint}`;
+            
+            const directResponse = await axios.post(directUrl, credentials, {
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              },
+              withCredentials: true,
+              timeout: 20000 // Extended timeout for last resort
+            });
+            
+            // Store token and user info
+            if (directResponse.data?.token) {
+              localStorage.setItem('token', directResponse.data.token);
+              
+              if (directResponse.data.refreshToken) {
+                localStorage.setItem('refreshToken', directResponse.data.refreshToken);
+              }
+              
+              if (directResponse.data.user) {
+                localStorage.setItem('user', JSON.stringify(directResponse.data.user));
+              }
+            }
+            
+            console.log('[Auth] Login successful with direct axios call');
+            return directResponse.data;
+          } catch (directError) {
+            console.error('[Auth] All login attempts failed:', directError.message);
+            throw new Error(getErrorMessage(directError) || 'Login failed after multiple attempts');
+          }
         }
       } else {
-        throw new Error('Unable to connect to the server. Please check your internet connection or try again later.');
-      }
-    }
-    
-    // Handle specific HTTP errors
-    if (error.response) {
-      const status = error.response.status;
-      const errorData = error.response.data;
-      
-      console.error(`[Auth] Login failed with status ${status}:`, errorData);
-      
-      // Enhance error with specific user messages based on status code
-      switch (status) {
-        case 400:
-          error.userMessage = errorData?.message || 'Invalid login credentials. Please check your email and password.';
-          break;
-        case 401:
-          error.userMessage = 'Incorrect email or password. Please try again.';
-          break;
-        case 403:
-          error.userMessage = 'Your account has been disabled. Please contact support.';
-          break;
-        case 404:
-          error.userMessage = 'Login service not found. Please try again later.';
-          break;
-        case 429:
-          error.userMessage = 'Too many failed login attempts. Please try again later.';
-          break;
-        case 500:
-        case 502:
-        case 503:
-        case 504:
-          error.userMessage = 'Server error. Please try again later.';
-          break;
-        default:
-          error.userMessage = errorData?.message || getErrorMessage(error);
+        // Already in production mode, throw with clear message
+        throw new Error('Unable to connect to the authentication server. Please check your internet connection.');
       }
     } else {
-      error.userMessage = getErrorMessage(error);
+      // Handle non-network errors (server errors, validation errors, etc)
+      const errorMessage = getErrorMessage(error);
+      console.error('[Auth] Login failed:', errorMessage);
+      throw new Error(errorMessage);
     }
-    
-    console.error('[Auth] Login error:', error.userMessage);
-    throw error;
   }
 };
 
@@ -132,16 +138,16 @@ const retryResponse = await apiClient.post(loginEndpoint, credentials);
  * @returns {Promise} Promise resolving to registration result
  */
 export const register = async (userData) => {
-  // Validate data before attempting API call
-  if (!userData.email || !userData.password) {
-    throw new Error('Email and password are required');
+  // Validate required fields
+  if (!userData.email || !userData.password || !userData.name) {
+    console.error('[Auth] Registration failed: Missing required fields');
+    throw new Error('Name, email and password are required');
   }
   
   try {
-    const response = await apiClient.post(`${apiConfig.ENDPOINTS.AUTH.REGISTER}`, userData);
-    console.log('[Auth] Registration successful');
+    const response = await apiClient.post(apiConfig.ENDPOINTS.AUTH.REGISTER, userData);
     
-    // Store token if returned with registration
+    // Some APIs automatically log in the user after registration
     if (response.data?.token) {
       localStorage.setItem('token', response.data.token);
       
@@ -154,78 +160,113 @@ export const register = async (userData) => {
       }
     }
     
+    console.log('[Auth] Registration successful');
     return response.data;
   } catch (error) {
-    console.error('[Auth] Registration error:', error);
-    
-    // Handle specific HTTP errors
-    if (error.response) {
-      const status = error.response.status;
-      
-      switch (status) {
-        case 409:
-          error.userMessage = 'Email address is already registered. Please use a different email or try to login.';
-          break;
-        case 400:
-          error.userMessage = error.response.data?.message || 'Invalid registration data. Please check your information.';
-          break;
-        default:
-          error.userMessage = error.response.data?.message || getErrorMessage(error);
-      }
-    } else {
-      error.userMessage = getErrorMessage(error);
+    // Handle registration errors with user-friendly messages
+    if (error.response?.status === 409) {
+      throw new Error('This email is already registered. Please try logging in instead.');
     }
     
-    throw error;
+    const errorMessage = getErrorMessage(error);
+    console.error('[Auth] Registration failed:', errorMessage);
+    throw new Error(errorMessage);
   }
 };
 
 /**
- * Logout user
+ * Log out the current user
  * @returns {Promise} Promise resolving when logout is complete
  */
 export const logout = async () => {
   try {
-    await apiClient.post(`${apiConfig.ENDPOINTS.AUTH.LOGOUT}`);
-    console.log('[Auth] Logout successful');
-  } catch (error) {
-    console.warn('[Auth] Logout error:', error);
-    // Continue with logout even if API call fails
-  } finally {
-    // Always clear local storage
+    // Only call the logout endpoint if we have a token
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        await apiClient.post(apiConfig.ENDPOINTS.AUTH.LOGOUT);
+        console.log('[Auth] Logout API call successful');
+      } catch (error) {
+        // We still want to clear local storage even if the API call fails
+        console.warn('[Auth] Logout API call failed, but proceeding with local logout:', error.message);
+      }
+    }
+    
+    // Clean up local storage regardless of API success
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
+    
+    console.log('[Auth] User logged out');
+    return true;
+  } catch (error) {
+    console.error('[Auth] Error during logout:', error);
+    
+    // Still clear storage even on error
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    
     return true;
   }
 };
 
 /**
- * Verify if current token is valid
- * @returns {Promise} Promise resolving to user data if valid
+ * Get the current authenticated user
+ * @returns {Promise} Promise resolving to user data
  */
-export const verifyToken = async () => {
+export const getCurrentUser = async () => {
+  // First check if we have the user in localStorage
+  const userJson = localStorage.getItem('user');
+  const token = localStorage.getItem('token');
+  
+  if (!token) {
+    console.log('[Auth] No token found, user is not authenticated');
+    return null;
+  }
+  
   try {
-    const response = await apiClient.get(`${apiConfig.ENDPOINTS.AUTH.USER}`);
-    return response.data;
-  } catch (error) {
-    console.error('[Auth] Token verification failed:', error.message);
+    // Always verify with the server to ensure token is still valid
+    const response = await apiClient.get(apiConfig.ENDPOINTS.AUTH.USER);
     
-    // Clear token if it's invalid
+    // Update the stored user data if it has changed
+    const freshUserData = response.data.user || response.data;
+    localStorage.setItem('user', JSON.stringify(freshUserData));
+    
+    console.log('[Auth] Current user retrieved successfully');
+    return freshUserData;
+  } catch (error) {
+    console.error('[Auth] Failed to get current user:', error.message);
+    
+    // If we get 401 or 403, token is invalid/expired so we should clear it
     if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      console.log('[Auth] Token invalid, clearing authentication data');
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
+      return null;
     }
     
-    throw error;
+    // For network errors, if we have user data cached, return that
+    if (isNetworkError(error) && userJson) {
+      console.log('[Auth] Network error, using cached user data');
+      try {
+        return JSON.parse(userJson);
+      } catch (parseError) {
+        console.error('[Auth] Error parsing cached user data:', parseError);
+        return null;
+      }
+    }
+    
+    // Otherwise, we have no user
+    return null;
   }
 };
 
 /**
  * Request password reset
- * @param {string} email - User email
- * @returns {Promise} Promise resolving to reset request result
+ * @param {string} email - User's email address
+ * @returns {Promise} Promise resolving to the response data
  */
 export const requestPasswordReset = async (email) => {
   if (!email) {
@@ -233,50 +274,120 @@ export const requestPasswordReset = async (email) => {
   }
   
   try {
-    const response = await apiClient.post(`${apiConfig.ENDPOINTS.AUTH.RESET_PASSWORD}`, { email });
+    const response = await apiClient.post(apiConfig.ENDPOINTS.AUTH.RESET_PASSWORD, { email });
+    console.log('[Auth] Password reset requested successfully');
     return response.data;
   } catch (error) {
-    console.error('[Auth] Password reset request error:', error);
-    
-    if (error.response && error.response.status === 404) {
-      // Don't reveal if email exists or not for security
-      return { message: 'If your email is registered, you will receive reset instructions shortly.' };
-    }
-    
-    error.userMessage = getErrorMessage(error);
-    throw error;
+    const errorMessage = getErrorMessage(error);
+    console.error('[Auth] Password reset request failed:', errorMessage);
+    throw new Error(errorMessage);
   }
 };
 
 /**
- * Complete password reset
- * @param {object} resetData - Password reset data including token and new password
- * @returns {Promise} Promise resolving to reset result
+ * Confirm password reset with token and new password
+ * @param {object} resetData - Contains token, newPassword and confirmPassword
+ * @returns {Promise} Promise resolving to the response data
  */
-export const completePasswordReset = async (resetData) => {
-  if (!resetData.token || !resetData.password) {
-    throw new Error('Reset token and new password are required');
+export const confirmPasswordReset = async (resetData) => {
+  if (!resetData.token || !resetData.newPassword || !resetData.confirmPassword) {
+    throw new Error('Token and passwords are required');
+  }
+  
+  if (resetData.newPassword !== resetData.confirmPassword) {
+    throw new Error('Passwords do not match');
   }
   
   try {
-    const response = await apiClient.post(`${apiConfig.ENDPOINTS.AUTH.RESET_PASSWORD_CONFIRM}`, resetData);
+    const response = await apiClient.post(
+      apiConfig.ENDPOINTS.AUTH.RESET_PASSWORD_CONFIRM, 
+      resetData
+    );
+    console.log('[Auth] Password reset confirmed successfully');
     return response.data;
   } catch (error) {
-    console.error('[Auth] Password reset completion error:', error);
-    
-    // Handle specific errors
-    if (error.response) {
-      switch (error.response.status) {
-        case 400:
-          error.userMessage = error.response.data?.message || 'Invalid or expired reset token. Please request a new password reset.';
-          break;
-        default:
-          error.userMessage = error.response.data?.message || getErrorMessage(error);
-      }
-    } else {
-      error.userMessage = getErrorMessage(error);
-    }
-    
-    throw error;
+    const errorMessage = getErrorMessage(error);
+    console.error('[Auth] Password reset confirmation failed:', errorMessage);
+    throw new Error(errorMessage);
   }
 };
+
+/**
+ * Refresh authentication token
+ * @returns {Promise} Promise resolving to new token
+ */
+export const refreshToken = async () => {
+  const refreshTokenValue = localStorage.getItem('refreshToken');
+  
+  if (!refreshTokenValue) {
+    console.error('[Auth] No refresh token available');
+    throw new Error('No refresh token available');
+  }
+  
+  try {
+    const response = await apiClient.post(apiConfig.ENDPOINTS.AUTH.REFRESH_TOKEN, {
+      refreshToken: refreshTokenValue
+    });
+    
+    if (response.data?.token) {
+      localStorage.setItem('token', response.data.token);
+      
+      // Update refresh token if provided
+      if (response.data.refreshToken) {
+        localStorage.setItem('refreshToken', response.data.refreshToken);
+      }
+      
+      console.log('[Auth] Token refreshed successfully');
+      return response.data;
+    } else {
+      throw new Error('No token received from server');
+    }
+  } catch (error) {
+    console.error('[Auth] Token refresh failed:', error.message);
+    
+    // Clear tokens on refresh failure
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    
+    const errorMessage = getErrorMessage(error);
+    throw new Error(errorMessage);
+  }
+};
+
+/**
+ * Check if user is authenticated
+ * @returns {boolean} True if user has a valid token
+ */
+export const isAuthenticated = () => {
+  const token = localStorage.getItem('token');
+  return !!token;
+};
+
+/**
+ * Get user from local storage
+ * @returns {object|null} User object or null if not found
+ */
+export const getStoredUser = () => {
+  try {
+    const userJson = localStorage.getItem('user');
+    return userJson ? JSON.parse(userJson) : null;
+  } catch (error) {
+    console.error('[Auth] Error parsing stored user:', error);
+    return null;
+  }
+};
+
+// Export auth service methods
+const authService = {
+  login,
+  register,
+  logout,
+  getCurrentUser,
+  requestPasswordReset,
+  confirmPasswordReset,
+  refreshToken,
+  isAuthenticated,
+  getStoredUser
+};
+
+export default authService;

@@ -14,7 +14,7 @@ import apiClient from '../config/apiClient';
 
 
 // const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-const BACKEND_URL = apiConfig.BASE_URL;
+const BACKEND_URL = apiConfig.BACKEND_URL;
 
 const MatchingInterface = () => {
   const [learningMatches, setLearningMatches] = useState([]);

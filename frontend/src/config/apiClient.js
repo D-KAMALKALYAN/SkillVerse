@@ -64,6 +64,19 @@ export const getErrorMessage = (error) => {
   return error.message || 'An unexpected error occurred. Please try again.';
 };
 
+// Add a health check function to verify API connectivity
+export const checkApiHealth = async () => {
+  try {
+    const healthEndpoint = `${apiConfig.API_URL.replace(/\/api\/?$/, '')}/health`;
+    console.log(`[API] Health check: ${healthEndpoint}`);
+    const response = await axios.get(healthEndpoint, { timeout: 5000 });
+    return response.data && response.data.status === 'success';
+  } catch (error) {
+    console.error('[API] Health check failed:', error.message);
+    return false;
+  }
+};
+
 // Create axios instance with base URL from config
 const apiClient = axios.create({
   baseURL: apiConfig.API_URL,
@@ -71,16 +84,20 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
-  }
+  },
+  withCredentials: true // Important for CORS with credentials
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add auth token and handle CORS
 apiClient.interceptors.request.use(
   config => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Add CORS headers for all requests
+    config.headers['X-Requested-With'] = 'XMLHttpRequest';
     
     // Log outgoing requests in development
     if (process.env.NODE_ENV !== 'production') {
@@ -120,9 +137,13 @@ apiClient.interceptors.response.use(
           
           try {
             // Attempt to refresh the token
+            const refreshEndpoint = `${apiConfig.API_URL}${apiConfig.ENDPOINTS.AUTH.REFRESH_TOKEN}`;
+            console.log(`[API] Attempting to refresh token: ${refreshEndpoint}`);
+            
             const res = await axios.post(
-              `${apiConfig.API_URL}${apiConfig.ENDPOINTS.AUTH.REFRESH_TOKEN}`, 
-              { refreshToken }
+              refreshEndpoint, 
+              { refreshToken },
+              { withCredentials: true }
             );
             
             if (res.data.token) {

@@ -4,6 +4,16 @@ const router = express.Router();
 const authController = require('../controllers/authController');
 const auth = require('../middleware/auth');
 
+
+// Pre-flight OPTIONS handler for CORS
+router.options('*', (req, res) => {
+  // Handle OPTIONS requests explicitly to ensure CORS headers are set
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
+  res.sendStatus(204);
+});
+
 // Register a new user
 router.post('/register', authController.register);
 

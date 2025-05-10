@@ -24,9 +24,36 @@ const ENDPOINTS = {
     REGISTER: '/auth/register',
     LOGOUT: '/auth/logout',
     USER: '/auth/user',
-    HEALTH: '/health', // Make sure this endpoint exists on your backend
+    HEALTH: '/health', // Health check endpoint
     RESET_PASSWORD: '/auth/reset-password',
     RESET_PASSWORD_CONFIRM: '/auth/reset-password/confirm',
+    REFRESH_TOKEN: '/auth/refresh-token'
+  }
+};
+
+// Helper function to check API availability
+const checkApiConnectivity = async (url) => {
+  try {
+    const healthEndpoint = `${url.replace(/\/api\/?$/, '')}/health`;
+    console.log(`[API] Testing connectivity: ${healthEndpoint}`);
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    
+    const response = await fetch(healthEndpoint, { 
+      method: 'GET',
+      signal: controller.signal,
+      mode: 'cors',
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+    
+    clearTimeout(timeoutId);
+    return response.ok;
+  } catch (error) {
+    console.warn(`[API] Connectivity test failed for ${url}:`, error.message);
+    return false;
   }
 };
 
@@ -42,39 +69,67 @@ const apiConfig = {
   /**
    * Initialize API configuration based on environment
    */
-  initialize() {
+  async initialize() {
     // Prevent multiple initializations
     if (this.isInitialized) return this;
     
-    // Determine environment
-    const isLocalhost = 
-      window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1';
-    
-    const isLocalURL =
-      window.location.hostname.includes('.local') ||
-      window.location.hostname.includes('.test');
+    try {
+      // Determine environment
+      const isLocalhost = 
+        window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1';
       
-    const isDevelopmentMode =
-      (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') ||
-      window.location.hostname.includes('dev.');
+      const isLocalURL =
+        window.location.hostname.includes('.local') ||
+        window.location.hostname.includes('.test');
+        
+      const isDevelopmentMode =
+        (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') ||
+        window.location.hostname.includes('dev.') ||
+        window.location.hostname.includes('stage.');
+        
+      console.log(`Environment detection: isLocalhost=${isLocalhost}, isLocalURL=${isLocalURL}, isDevelopmentMode=${isDevelopmentMode}`);
       
-    console.log(`Environment detection: isLocalhost=${isLocalhost}, isLocalURL=${isLocalURL}, isDevelopmentMode=${isDevelopmentMode}`);
-    
-    // Default to development if on localhost/development, otherwise production
-    const environment = (isLocalhost || isLocalURL || isDevelopmentMode)
-      ? ENVIRONMENTS.DEVELOPMENT
-      : ENVIRONMENTS.PRODUCTION;
-    
-    this.API_URL = environment.API_URL;
-    this.BACKEND_URL = environment.BACKEND_URL;
-    this.isProduction = environment === ENVIRONMENTS.PRODUCTION;
-    
-    console.log(`[API] Using ${this.isProduction ? 'production' : 'development'} API endpoint: ${this.API_URL}`);
-    console.log(`[API] Backend URL: ${this.BACKEND_URL}`);
-    
-    this.isInitialized = true;
-    return this;
+      // Default to development if on localhost/development, otherwise production
+      const environment = (isLocalhost || isLocalURL || isDevelopmentMode)
+        ? ENVIRONMENTS.DEVELOPMENT
+        : ENVIRONMENTS.PRODUCTION;
+      
+      this.API_URL = environment.API_URL;
+      this.BACKEND_URL = environment.BACKEND_URL;
+      this.isProduction = environment === ENVIRONMENTS.PRODUCTION;
+      
+      console.log(`[API] Using ${this.isProduction ? 'production' : 'development'} API endpoint: ${this.API_URL}`);
+      console.log(`[API] Backend URL: ${this.BACKEND_URL}`);
+      
+      // Verify connectivity to selected environment
+      const isConnected = await checkApiConnectivity(this.API_URL);
+      
+      // If production is selected but not working, try development and vice versa
+      if (!isConnected) {
+        const alternateEnv = this.isProduction ? ENVIRONMENTS.DEVELOPMENT : ENVIRONMENTS.PRODUCTION;
+        const altConnected = await checkApiConnectivity(alternateEnv.API_URL);
+        
+        if (altConnected) {
+          console.log(`[API] Primary environment unreachable, switching to alternate environment`);
+          this.API_URL = alternateEnv.API_URL;
+          this.BACKEND_URL = alternateEnv.BACKEND_URL;
+          this.isProduction = alternateEnv === ENVIRONMENTS.PRODUCTION;
+          
+          console.log(`[API] Now using ${this.isProduction ? 'production' : 'development'} endpoint: ${this.API_URL}`);
+        } else {
+          console.warn(`[API] Both environments unreachable, sticking with original selection`);
+        }
+      }
+      
+      this.isInitialized = true;
+      return this;
+    } catch (error) {
+      console.error('[API] Error during initialization:', error);
+      this.forceProductionMode();
+      this.isInitialized = true;
+      return this;
+    }
   },
   
   /**
