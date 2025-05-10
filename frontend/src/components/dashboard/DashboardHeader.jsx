@@ -73,7 +73,7 @@ const ResponsiveHeader = styled(Card)`
   }
   
   /* Fix to ensure notification badges are visible */
-  :global(.notification-badge) {
+  .notification-badge {
     z-index: 5;
     position: relative;
   }
@@ -83,8 +83,8 @@ const ResponsiveHeader = styled(Card)`
     position: relative;
     
     /* Ensure any notification counter appears above other elements */
-    :global(.badge),
-    :global(.notification-counter) {
+    .badge,
+    .notification-counter {
       z-index: 1000;
       position: absolute;
       top: -5px;
@@ -115,7 +115,7 @@ const pulseGlow = keyframes`
   }
 `;
 
-// Styled component for the revolving globe
+// Styled component for the revolving globe - Fixed prop passing
 const RevolvingGlobe = styled.div`
   margin-right: 12px;
   display: flex;
@@ -124,8 +124,8 @@ const RevolvingGlobe = styled.div`
   background: linear-gradient(135deg, #1e3a8a, #3b82f6);
   border-radius: 50%;
   padding: 10px;
-  width: ${props => props.isMobile ? '35px' : '42px'};
-  height: ${props => props.isMobile ? '35px' : '42px'};
+  width: ${props => props.$isMobile ? '35px' : '42px'};
+  height: ${props => props.$isMobile ? '35px' : '42px'};
   animation: ${rotateGlobe} 10s linear infinite, ${pulseGlow} 4s ease-in-out infinite;
   position: relative;
   overflow: hidden;
@@ -143,8 +143,8 @@ const RevolvingGlobe = styled.div`
   
   svg {
     color: white;
-    height: ${props => props.isMobile ? '18px' : '22px'};
-    width: ${props => props.isMobile ? '18px' : '22px'};
+    height: ${props => props.$isMobile ? '18px' : '22px'};
+    width: ${props => props.$isMobile ? '18px' : '22px'};
   }
   
   @media (max-width: ${breakpoints.sm}px) {
@@ -165,7 +165,7 @@ const EnhancedTitle = styled.div`
     font-family: 'Space Grotesk', 'Orbitron', sans-serif;
     font-weight: 800;
     letter-spacing: 1.5px;
-    font-size: ${props => props.isMobile ? '1.4rem' : '1.8rem'};
+    font-size: ${props => props.$isMobile ? '1.4rem' : '1.8rem'};
     color: #000000; /* Direct black color instead of gradient */
     text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
     position: relative;
@@ -223,7 +223,7 @@ const EnhancedTitle = styled.div`
   
   .subtitle {
     font-family: 'Inter', sans-serif;
-    font-size: ${props => props.isMobile ? '0.7rem' : '0.8rem'};
+    font-size: ${props => props.$isMobile ? '0.7rem' : '0.8rem'};
     letter-spacing: 3px;
     text-transform: uppercase;
     color: #64748b;
@@ -284,16 +284,14 @@ const NotificationWrapper = styled.div`
   z-index: 1;
   
   /* This ensures any badges from NotificationCenter are visible */
-  && {
-    .badge, 
-    [class*="badge"],
-    [class*="notification-badge"],
-    [class*="notification-counter"] {
-      position: absolute;
-      top: -8px;
-      right: -8px;
-      z-index: 10;
-    }
+  .badge, 
+  [class*="badge"],
+  [class*="notification-badge"],
+  [class*="notification-counter"] {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    z-index: 10;
   }
 `;
 
@@ -331,7 +329,7 @@ const DashboardHeader = ({ handleLogout, navigate }) => {
   }, []);
 
   // Add font import to document head
-  React.useEffect(() => {
+  useEffect(() => {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap';
@@ -419,11 +417,11 @@ const DashboardHeader = ({ handleLogout, navigate }) => {
       <Card.Body>
         <div className="d-flex justify-content-between align-items-center header-content">
           <div className="d-flex align-items-center">
-            <RevolvingGlobe isMobile={isMobile}>
+            <RevolvingGlobe $isMobile={isMobile}>
               <Globe />
             </RevolvingGlobe>
             
-            <EnhancedTitle isMobile={isMobile}>
+            <EnhancedTitle $isMobile={isMobile}>
               <div className="title-container">
                 <h1 className="main-title">
                   <span className={showCursor ? "typing-text" : ""}>

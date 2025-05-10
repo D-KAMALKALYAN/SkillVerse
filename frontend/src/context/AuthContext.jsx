@@ -1,4 +1,3 @@
-// 1. Updated AuthContext.js
 import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from "react";
 import { initializeSocket } from '../services/socketService';
 
@@ -8,12 +7,15 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [socketInitialized, setSocketInitialized] = useState(false);
-  const [isValidating, setIsValidating] = useState(true); // Added to match your PrivateRoute component
+  const [isValidating, setIsValidating] = useState(true);
+  const [authError, setAuthError] = useState(null);
   
   // Load user & token from localStorage
   useEffect(() => {
     const loadUserSession = async () => {
       setIsValidating(true);
+      setAuthError(null);
+      
       try {
         const storedUser = localStorage.getItem("user");
         const storedToken = localStorage.getItem("token");
@@ -21,37 +23,54 @@ export const AuthProvider = ({ children }) => {
         if (storedUser && storedToken) {
           try {
             const parsedUser = JSON.parse(storedUser);
-            if (parsedUser) {
+            if (parsedUser && parsedUser._id) {
               setUser(parsedUser);
               setToken(storedToken);
               
               // Initialize socket connection with the token
               if (!socketInitialized) {
-                initializeSocket(storedToken);
-                setSocketInitialized(true);
+                const socket = initializeSocket(storedToken);
+                if (socket) {
+                  setSocketInitialized(true);
+                  
+                  // Set up socket reconnection logic
+                  socket.on('reconnect', () => {
+                    console.log('Socket reconnected, re-authenticating...');
+                    socket.auth = { token: storedToken };
+                    socket.connect();
+                  });
+                }
               }
+            } else {
+              // Invalid user object
+              console.warn("Invalid user data in localStorage");
+              localStorage.removeItem("user");
+              localStorage.removeItem("token");
             }
           } catch (error) {
             console.error("Error parsing user data from localStorage:", error);
             localStorage.removeItem("user");
             localStorage.removeItem("token");
+            setAuthError("Session data corrupted. Please log in again.");
           }
         }
       } catch (error) {
         console.error("Error accessing localStorage:", error);
+        setAuthError("Could not access session storage. Please check browser permissions.");
       } finally {
         setIsValidating(false);
       }
     };
     
     loadUserSession();
-  }, []); // No dependencies to prevent re-runs
+  }, []); 
   
   // Login function with error handling
   const login = useCallback((userData, authToken) => {
     if (!userData || !authToken) {
       console.error("Invalid login data provided");
-      return;
+      setAuthError("Invalid login data");
+      return false;
     }
     
     try {
@@ -62,45 +81,88 @@ export const AuthProvider = ({ children }) => {
       // Update state
       setUser(userData);
       setToken(authToken);
+      setAuthError(null);
       
       // Initialize socket connection
-      if (!socketInitialized) {
-        initializeSocket(authToken);
+      const socket = initializeSocket(authToken);
+      if (socket) {
         setSocketInitialized(true);
       }
+      
+      // Mark as just logged in for special handling in other components
+      sessionStorage.setItem('justLoggedIn', 'true');
+      
+      return true;
     } catch (error) {
       console.error("Error storing user data:", error);
+      setAuthError("Could not save login session");
+      return false;
     }
-  }, [socketInitialized]);
+  }, []);
   
   // Logout function to clear user session
   const logout = useCallback(() => {
     try {
       localStorage.removeItem("user");
       localStorage.removeItem("token");
-      setUser(null);
-      setToken(null);
+      sessionStorage.removeItem('justLoggedIn');
       
-      // Disconnect socket
+      // Import socket service only when needed to avoid circular dependencies
       const socketService = require('../services/socketService');
       if (socketService.socket) {
         socketService.socket.disconnect();
       }
+      
+      // Update state at the end to ensure UI updates after other operations
+      setUser(null);
+      setToken(null);
       setSocketInitialized(false);
+      setAuthError(null);
+      
+      return true;
     } catch (error) {
-      console.error("Error clearing localStorage:", error);
+      console.error("Error during logout:", error);
+      return false;
     }
   }, []);
+  
+  // Update user data without full login/logout
+  const updateUserData = useCallback((updatedUserData) => {
+    try {
+      if (!user || !user._id) {
+        console.error("Cannot update user data when not logged in");
+        return false;
+      }
+      
+      // Merge with existing user data
+      const mergedUserData = {
+        ...user,
+        ...updatedUserData,
+        // Ensure _id doesn't change
+        _id: user._id
+      };
+      
+      // Update localStorage and state
+      localStorage.setItem("user", JSON.stringify(mergedUserData));
+      setUser(mergedUserData);
+      return true;
+    } catch (error) {
+      console.error("Error updating user data:", error);
+      return false;
+    }
+  }, [user]);
   
   // Memoized value to prevent unnecessary re-renders
   const authContextValue = useMemo(() => ({ 
     user, 
     token, 
     login, 
-    logout, 
+    logout,
+    updateUserData,
     socketInitialized,
-    isValidating // Include isValidating to match your PrivateRoute
-  }), [user, token, login, logout, socketInitialized, isValidating]);
+    isValidating,
+    authError
+  }), [user, token, login, logout, updateUserData, socketInitialized, isValidating, authError]);
   
   return <AuthContext.Provider value={authContextValue}>{children}</AuthContext.Provider>;
 };

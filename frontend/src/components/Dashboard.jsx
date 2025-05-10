@@ -18,7 +18,10 @@ import SkillsTab from './dashboard/SkillsTab';
 import { fetchUserProfile, fetchCompletedSessionsCount } from './dashboard/dashboardUtils';
 
 // const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:4000';
-const BACKEND_URL = apiConfig.BASE_URL;
+const BACKEND_URL = apiConfig.BACKEND_URL;
+
+console.log('Backend URL:', BACKEND_URL);
+console.log('API URL:', apiConfig.API_URL);
 
 // Styled components for responsive design
 const FullScreenContainer = styled(Container)`
@@ -486,67 +489,60 @@ const Dashboard = () => {
   };
 
   // Enhanced loadUserProfile function with better error handling
-  const loadUserProfile = async () => {
-    try {
-      if (!user || !user._id) {
-        throw new Error('User not authenticated');
-      }
-      
-      // Use Promise.all to parallelize the fetch operations
-      const [userData, completedSessionsCount, pointsData, leaderboardData] = await Promise.all([
-        fetchUserProfile(user._id, BACKEND_URL).catch(err => {
-          console.error('Error fetching user profile:', err);
-          return {};
-        }),
-        fetchCompletedSessionsCount(user._id, BACKEND_URL).catch(err => {
-          console.error('Error fetching completed sessions:', err);
-          return 0;
-        }),
-        fetchUserPoints(user._id).catch(err => {
-          console.error('Error fetching user points:', err);
-          return { points: 0, streak: 0 };
-        }),
-        // Directly fetch leaderboard here
+
+const loadUserProfile = async () => {
+  try {
+    if (!user || !user._id) {
+      throw new Error('User not authenticated');
+    }
+    
+    // Use Promise.allSettled instead of Promise.all to prevent one failure from affecting others
+    const [userDataResult, completedSessionsResult, pointsDataResult, leaderboardDataResult] = 
+      await Promise.allSettled([
+        fetchUserProfile(user._id, BACKEND_URL),
+        fetchCompletedSessionsCount(user._id, BACKEND_URL),
+        fetchUserPoints(user._id),
         fetch(`${BACKEND_URL}/api/points/leaderboard`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
           },
-          cache: 'no-store', // Prevent caching
+          cache: 'no-store',
           credentials: 'include'
-        })
-        .then(res => {
+        }).then(res => {
           if (!res.ok) throw new Error(`Failed to fetch leaderboard: ${res.status}`);
           return res.json();
         })
-        .catch(err => {
-          console.error('Error fetching leaderboard:', err);
-          return { userRank: null, leaderboard: [] };
-        })
       ]);
-      
-      // Update all state at once
-      setStats(prevStats => ({
-        ...prevStats,
-        ...userData,
-        sessionsCompleted: completedSessionsCount,
-        points: pointsData.points || 0,
-        streak: pointsData.streak || 0,
-        userRank: leaderboardData.userRank,
-        leaderboard: leaderboardData.leaderboard
-      }));
-      
-      setError(null);
-    } catch (error) {
-      console.error('Error loading user profile:', error);
-      setError('Failed to load user profile. Please refresh the page.');
-      safeToast('Error fetching user profile', {
-        type: 'error'
-      });
-      throw error; // Re-throw to be handled by the caller
-    }
-  };
+    
+    // Process results safely, handling potential rejections
+    const userData = userDataResult.status === 'fulfilled' ? userDataResult.value : {};
+    const completedSessionsCount = completedSessionsResult.status === 'fulfilled' ? completedSessionsResult.value : 0;
+    const pointsData = pointsDataResult.status === 'fulfilled' ? pointsDataResult.value : { points: 0, streak: 0 };
+    const leaderboardData = leaderboardDataResult.status === 'fulfilled' ? leaderboardDataResult.value : { userRank: null, leaderboard: [] };
+    
+    // Update all state at once
+    setStats(prevStats => ({
+      ...prevStats,
+      ...userData,
+      sessionsCompleted: completedSessionsCount,
+      points: pointsData.points || 0,
+      streak: pointsData.streak || 0,
+      userRank: leaderboardData.userRank,
+      leaderboard: leaderboardData.leaderboard || []
+    }));
+    
+    setError(null);
+  } catch (error) {
+    console.error('Error loading user profile:', error);
+    // Set a more informative but less alarming error message
+    setError('Unable to load complete profile data. Some features may be limited.');
+    safeToast('Some profile data couldn\'t be loaded', {
+      type: 'warning'
+    });
+  }
+};
 
   // Calculate skill distribution percentages
   const teachingSkillsCount = stats.teachingSkills?.length || 0;

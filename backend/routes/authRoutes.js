@@ -25,4 +25,9 @@ router.post('/verify-security-questions', authController.verifySecurityQuestions
 // Reset password
 router.post('/reset-password', authController.resetPassword);
 
+// Add debug route to test if router is reachable
+router.get('/status', (req, res) => {
+  res.json({ status: 'Auth router is working' });
+});
+
 module.exports = router;

@@ -7,7 +7,7 @@ import { fetchRequestCounts } from './dashboardUtils'; // Update with correct pa
 
 import apiConfig from '../../config/apiConfig';
 import apiClient from '../../config/apiClient';
-const BACKEND_URL = apiConfig.BASE_URL;
+const BACKEND_URL = apiConfig.BACKEND_URL;
 
 const UserWelcomeCard = ({ 
   user, 

@@ -4,56 +4,8 @@
  * Handles user authentication with improved error handling and connection resilience.
  */
 
-import axios from 'axios';
 import apiClient, { isNetworkError, getErrorMessage } from '../config/apiClient';
 import apiConfig from '../config/apiConfig';
-
-// Initialize API config
-(async function() {
-  try {
-    await apiConfig.initialize();
-    console.log(`[Auth] Using API endpoint: ${apiConfig.API_URL}`);
-  } catch (error) {
-    console.error('[Auth] API config initialization failed:', error);
-  }
-})();
-
-/**
- * Check if the configured API URL is reachable
- * @returns {Promise<boolean>} True if API is reachable
- */
-const checkApiHealth = async () => {
-  try {
-    // Use a simple health check endpoint that should exist on both environments
-    // Many backends use /health, /ping, or / as simple health endpoints
-    const endpoints = [
-      `${apiConfig.API_URL}${apiConfig.ENDPOINTS.AUTH.HEALTH || '/health'}`,
-      `${apiConfig.API_URL}/ping`,
-      `${apiConfig.API_URL}/`
-    ];
-    
-    for (const endpoint of endpoints) {
-      try {
-        console.log(`[Auth] Checking API health at: ${endpoint}`);
-        const response = await axios.get(endpoint, { timeout: 3000 });
-        if (response.status >= 200 && response.status < 500) {
-          console.log(`[Auth] API health check successful: ${response.status}`);
-          return true; // Any response that's not a server error is considered successful
-        }
-      } catch (endpointError) {
-        console.log(`[Auth] Health check failed for ${endpoint}: ${endpointError.message}`);
-        // Continue to next endpoint
-      }
-    }
-    
-    // If we get here, all health checks failed
-    console.warn('[Auth] All API health checks failed.');
-    return false;
-  } catch (error) {
-    console.warn('[Auth] API health check error:', error.message);
-    return false;
-  }
-};
 
 /**
  * Login user
@@ -67,17 +19,14 @@ export const login = async (credentials) => {
     throw new Error('Email and password are required');
   }
   
-  console.log(`[Auth] Attempting login to: ${apiConfig.API_URL}${apiConfig.ENDPOINTS.AUTH.LOGIN}`);
-  
-  // First ensure API is reachable
-  const isApiHealthy = await checkApiHealth();
-  if (!isApiHealthy && !apiConfig.isProduction) {
-    console.log('[Auth] API not reachable. Switching to production mode.');
-    apiConfig.forceProductionMode();
-  }
+  // The actual route structure is /api/auth/login, but our apiClient already has /api/ as the base URL
+// So we need to use /auth/login instead of just /auth/login
+const loginEndpoint = `${apiConfig.ENDPOINTS.AUTH.LOGIN}`;
+  console.log(`[Auth] Attempting login with endpoint: ${loginEndpoint}`);
   
   try {
-    const response = await apiClient.post(apiConfig.ENDPOINTS.AUTH.LOGIN, credentials);
+    // Use apiClient which already has the base URL configured
+    const response = await apiClient.post(loginEndpoint, credentials);
     
     // Store token and user info
     if (response.data?.token) {
@@ -102,17 +51,14 @@ export const login = async (credentials) => {
       // Try production URL if we're not already using it
       if (!apiConfig.isProduction) {
         console.log('[Auth] Attempting login with production fallback');
+        
+        // Switch to production mode
         apiConfig.forceProductionMode();
         
         try {
-          // Do a health check first
-          const isHealthy = await checkApiHealth();
-          if (!isHealthy) {
-            throw new Error('Production API is not reachable');
-          }
-          
-          // Try login again with production URL
-          const retryResponse = await apiClient.post(apiConfig.ENDPOINTS.AUTH.LOGIN, credentials);
+          // Try login again (apiClient will use the updated base URL from apiConfig)
+          // When retrying, make sure to use the same endpoint structure
+const retryResponse = await apiClient.post(loginEndpoint, credentials);
           
           // Store token and user info
           if (retryResponse.data?.token) {
@@ -192,7 +138,7 @@ export const register = async (userData) => {
   }
   
   try {
-    const response = await apiClient.post(apiConfig.ENDPOINTS.AUTH.REGISTER, userData);
+    const response = await apiClient.post(`${apiConfig.ENDPOINTS.AUTH.REGISTER}`, userData);
     console.log('[Auth] Registration successful');
     
     // Store token if returned with registration
@@ -240,7 +186,7 @@ export const register = async (userData) => {
  */
 export const logout = async () => {
   try {
-    await apiClient.post(apiConfig.ENDPOINTS.AUTH.LOGOUT);
+    await apiClient.post(`${apiConfig.ENDPOINTS.AUTH.LOGOUT}`);
     console.log('[Auth] Logout successful');
   } catch (error) {
     console.warn('[Auth] Logout error:', error);
@@ -260,7 +206,7 @@ export const logout = async () => {
  */
 export const verifyToken = async () => {
   try {
-    const response = await apiClient.get(apiConfig.ENDPOINTS.AUTH.USER);
+    const response = await apiClient.get(`${apiConfig.ENDPOINTS.AUTH.USER}`);
     return response.data;
   } catch (error) {
     console.error('[Auth] Token verification failed:', error.message);
@@ -287,8 +233,7 @@ export const requestPasswordReset = async (email) => {
   }
   
   try {
-    const endpoint = apiConfig.ENDPOINTS.AUTH.RESET_PASSWORD || '/auth/reset-password';
-    const response = await apiClient.post(endpoint, { email });
+    const response = await apiClient.post(`${apiConfig.ENDPOINTS.AUTH.RESET_PASSWORD}`, { email });
     return response.data;
   } catch (error) {
     console.error('[Auth] Password reset request error:', error);
@@ -314,8 +259,7 @@ export const completePasswordReset = async (resetData) => {
   }
   
   try {
-    const endpoint = apiConfig.ENDPOINTS.AUTH.RESET_PASSWORD_CONFIRM || '/auth/reset-password/confirm';
-    const response = await apiClient.post(endpoint, resetData);
+    const response = await apiClient.post(`${apiConfig.ENDPOINTS.AUTH.RESET_PASSWORD_CONFIRM}`, resetData);
     return response.data;
   } catch (error) {
     console.error('[Auth] Password reset completion error:', error);

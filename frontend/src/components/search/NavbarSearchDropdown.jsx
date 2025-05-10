@@ -378,7 +378,7 @@ const NavbarSearchDropdown = () => {
         </div>
       </Dropdown.Menu>
 
-      <style jsx>{`
+      <style data-jsx="true">{`
         /* Futuristic component styling */
         .futuristic-search-toggle:hover {
           border-color: rgba(99, 179, 237, 0.6) !important;

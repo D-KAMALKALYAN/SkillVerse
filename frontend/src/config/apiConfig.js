@@ -32,36 +32,38 @@ const ENDPOINTS = {
 
 // Config object to export
 const apiConfig = {
-  API_URL: '',
-  BACKEND_URL: '',
+  // Initialize with default values to avoid undefined
+  API_URL: ENVIRONMENTS.PRODUCTION.API_URL,
+  BACKEND_URL: ENVIRONMENTS.PRODUCTION.BACKEND_URL,
   ENDPOINTS,
   isInitialized: false,
-  isProduction: false,
+  isProduction: true,
   
   /**
    * Initialize API configuration based on environment
    */
-  async initialize() {
-    if (this.isInitialized) return;
+  initialize() {
+    // Prevent multiple initializations
+    if (this.isInitialized) return this;
     
     // Determine environment
     const isLocalhost = 
-      window.location.hostname === 'localhost' || 
+      window.location.hostname === 'localhost' ||
       window.location.hostname === '127.0.0.1';
     
-    const isLocalURL = 
-      window.location.hostname.includes('.local') || 
+    const isLocalURL =
+      window.location.hostname.includes('.local') ||
       window.location.hostname.includes('.test');
       
-    const isDevelopmentMode = 
-      process.env.NODE_ENV === 'development' || 
+    const isDevelopmentMode =
+      (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') ||
       window.location.hostname.includes('dev.');
-    
+      
     console.log(`Environment detection: isLocalhost=${isLocalhost}, isLocalURL=${isLocalURL}, isDevelopmentMode=${isDevelopmentMode}`);
     
     // Default to development if on localhost/development, otherwise production
-    const environment = (isLocalhost || isLocalURL || isDevelopmentMode) 
-      ? ENVIRONMENTS.DEVELOPMENT 
+    const environment = (isLocalhost || isLocalURL || isDevelopmentMode)
+      ? ENVIRONMENTS.DEVELOPMENT
       : ENVIRONMENTS.PRODUCTION;
     
     this.API_URL = environment.API_URL;
@@ -110,7 +112,15 @@ const apiConfig = {
   }
 };
 
-// Initialize on import
-apiConfig.initialize();
+// Auto-initialize on import - use IIFE to ensure execution
+(function() {
+  try {
+    apiConfig.initialize();
+  } catch (error) {
+    console.error('[API] Failed to initialize config:', error);
+    console.log('[API] Falling back to production settings');
+    apiConfig.forceProductionMode();
+  }
+})();
 
 export default apiConfig;

@@ -224,6 +224,222 @@ const NotificationCenter = () => {
     );
   };
 
+  // Define all styles as a CSS string
+  const customStyles = `
+    @keyframes pulse-dot {
+      0% {
+        transform: scale(0.8);
+        opacity: 0.5;
+      }
+      50% {
+        transform: scale(1.5);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(0.8);
+        opacity: 0.5;
+      }
+    }
+    
+    .pulse {
+      animation: pulse-effect 1.5s ease infinite;
+    }
+    
+    @keyframes pulse-effect {
+      0% {
+        box-shadow: 0 0 0 0 rgba(67, 97, 238, 0.4);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(67, 97, 238, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(67, 97, 238, 0);
+      }
+    }
+    
+    .notification-toggle {
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .notification-toggle:after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(circle at center, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%);
+      border-radius: 50%;
+      opacity: 0.8;
+      z-index: 0;
+    }
+    
+    .notification-toggle:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(67, 97, 238, 0.3);
+    }
+    
+    .notification-icon-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+    
+    .ripple-effect {
+      position: absolute;
+      border-radius: 50%;
+      background-color: rgba(255, 45, 85, 0.4);
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      z-index: 0;
+    }
+    
+    .ripple-1 {
+      animation: ripple 2s ease-out infinite;
+    }
+    
+    .ripple-2 {
+      animation: ripple 2s ease-out 0.5s infinite;
+    }
+    
+    @keyframes ripple {
+      0% {
+        transform: scale(0.1);
+        opacity: 0.4;
+      }
+      100% {
+        transform: scale(2.5);
+        opacity: 0;
+      }
+    }
+    
+    .notification-badge {
+      z-index: 3;
+    }
+    
+    /* Enhanced scrollbar styling */
+    .notification-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .notification-scrollbar::-webkit-scrollbar-track {
+      background: #f8fafc;
+    }
+    
+    .notification-scrollbar::-webkit-scrollbar-thumb {
+      background-color: #cbd5e1;
+      border-radius: 20px;
+      border: 2px solid #f8fafc;
+    }
+    
+    /* Enhanced notification item interactions */
+    .notification-item:hover {
+      background-color: rgba(241, 245, 249, 0.8) !important;
+    }
+    
+    .notification-item:hover .notification-icon-bg {
+      transform: scale(1.05);
+    }
+    
+    .notification-item:hover .notification-title {
+      color: #4361EE;
+    }
+    
+    .notification-item:hover .delete-button {
+      opacity: 1;
+      transform: scale(1.05);
+    }
+    
+    .notification-content-wrapper:active {
+      background-color: rgba(226, 232, 240, 0.8);
+    }
+    
+    .delete-button:hover {
+      background: white !important;
+      border-color: rgba(220, 53, 69, 0.3) !important;
+      transform: scale(1.1) !important;
+    }
+    
+    /* Action button enhancements */
+    .action-button {
+      transition: all 0.2s ease;
+    }
+    
+    .action-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .action-button:active {
+      transform: translateY(0px);
+    }
+    
+    /* Empty state animation */
+    .empty-state .empty-icon-container {
+      animation: float 3s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+      0% {
+        transform: translateY(0px);
+      }
+      50% {
+        transform: translateY(-8px);
+      }
+      100% {
+        transform: translateY(0px);
+      }
+    }
+    
+    /* Mobile optimizations */
+    @media (max-width: 768px) {
+      .notification-card {
+        border-radius: 1rem;
+        overflow: hidden;
+      }
+      
+      .notification-item {
+        padding: 0;
+      }
+      
+      .notification-content-wrapper {
+        padding: 0.75rem !important;
+      }
+      
+      .notification-icon-bg {
+        width: 32px !important;
+        height: 32px !important;
+      }
+      
+      .notification-toggle:after {
+        opacity: 0.5;
+      }
+      
+      .delete-button {
+        width: 24px !important;
+        height: 24px !important;
+        top: 8px !important;
+        right: 8px !important;
+      }
+    }
+    
+    /* Fix to ensure the badge is fully visible */
+    .notification-badge {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      position: absolute !important;
+      top: -5px !important;
+      right: -5px !important;
+      transform: translate(25%, -25%) !important;
+      z-index: 1000 !important;
+      visibility: visible !important;
+      overflow: visible !important;
+    }
+  `;
+
   return (
     <Dropdown show={show} onToggle={setShow} align="end">
       <Dropdown.Toggle 
@@ -492,223 +708,11 @@ const NotificationCenter = () => {
         </Card>
       </Dropdown.Menu>
 
-      <style jsx>{`
-        @keyframes pulse-dot {
-          0% {
-            transform: scale(0.8);
-            opacity: 0.5;
-          }
-          50% {
-            transform: scale(1.5);
-            opacity: 1;
-          }
-          100% {
-            transform: scale(0.8);
-            opacity: 0.5;
-          }
-        }
-        
-        .pulse {
-          animation: pulse-effect 1.5s ease infinite;
-        }
-        
-        @keyframes pulse-effect {
-          0% {
-            box-shadow: 0 0 0 0 rgba(67, 97, 238, 0.4);
-          }
-          70% {
-            box-shadow: 0 0 0 10px rgba(67, 97, 238, 0);
-          }
-          100% {
-            box-shadow: 0 0 0 0 rgba(67, 97, 238, 0);
-          }
-        }
-        
-        .notification-toggle {
-          position: relative;
-          overflow: hidden;
-        }
-        
-        .notification-toggle:after {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: radial-gradient(circle at center, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%);
-          border-radius: 50%;
-          opacity: 0.8;
-          z-index: 0;
-        }
-        
-        .notification-toggle:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 12px rgba(67, 97, 238, 0.3);
-        }
-        
-        .notification-icon-container {
-          position: relative;
-          width: 100%;
-          height: 100%;
-        }
-        
-        .ripple-effect {
-          position: absolute;
-          border-radius: 50%;
-          background-color: rgba(255, 45, 85, 0.4);
-          width: 100%;
-          height: 100%;
-          opacity: 0;
-          z-index: 0;
-        }
-        
-        .ripple-1 {
-          animation: ripple 2s ease-out infinite;
-        }
-        
-        .ripple-2 {
-          animation: ripple 2s ease-out 0.5s infinite;
-        }
-        
-        @keyframes ripple {
-          0% {
-            transform: scale(0.1);
-            opacity: 0.4;
-          }
-          100% {
-            transform: scale(2.5);
-            opacity: 0;
-          }
-        }
-        
-        .notification-badge {
-          z-index: 3;
-        }
-        
-        /* Enhanced scrollbar styling */
-        .notification-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        
-        .notification-scrollbar::-webkit-scrollbar-track {
-          background: #f8fafc;
-        }
-        
-        .notification-scrollbar::-webkit-scrollbar-thumb {
-          background-color: #cbd5e1;
-          border-radius: 20px;
-          border: 2px solid #f8fafc;
-        }
-        
-        /* Enhanced notification item interactions */
-        .notification-item:hover {
-          background-color: rgba(241, 245, 249, 0.8) !important;
-        }
-        
-        .notification-item:hover .notification-icon-bg {
-          transform: scale(1.05);
-        }
-        
-        .notification-item:hover .notification-title {
-          color: #4361EE;
-        }
-        
-        .notification-item:hover .delete-button {
-          opacity: 1;
-          transform: scale(1.05);
-        }
-        
-        .notification-content-wrapper:active {
-          background-color: rgba(226, 232, 240, 0.8);
-        }
-        
-        .delete-button:hover {
-          background: white !important;
-          border-color: rgba(220, 53, 69, 0.3) !important;
-          transform: scale(1.1) !important;
-        }
-        
-        /* Action button enhancements */
-        .action-button {
-          transition: all 0.2s ease;
-        }
-        
-        .action-button:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        
-        .action-button:active {
-          transform: translateY(0px);
-        }
-        
-        /* Empty state animation */
-        .empty-state .empty-icon-container {
-          animation: float 3s ease-in-out infinite;
-        }
-        
-        @keyframes float {
-          0% {
-            transform: translateY(0px);
-          }
-          50% {
-            transform: translateY(-8px);
-          }
-          100% {
-            transform: translateY(0px);
-          }
-        }
-        
-        /* Mobile optimizations */
-        @media (max-width: 768px) {
-          .notification-card {
-            border-radius: 1rem;
-            overflow: hidden;
-          }
-          
-          .notification-item {
-            padding: 0;
-          }
-          
-          .notification-content-wrapper {
-            padding: 0.75rem !important;
-          }
-          
-          .notification-icon-bg {
-            width: 32px !important;
-            height: 32px !important;
-          }
-          
-          .notification-toggle:after {
-            opacity: 0.5;
-          }
-          
-          .delete-button {
-            width: 24px !important;
-            height: 24px !important;
-            top: 8px !important;
-            right: 8px !important;
-          }
-        }
-        
-        /* Fix to ensure the badge is fully visible */
-        .notification-badge {
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-          position: absolute !important;
-          top: -5px !important;
-          right: -5px !important;
-          transform: translate(25%, -25%) !important;
-          z-index: 1000 !important;
-          visibility: visible !important;
-          overflow: visible !important;
-        }
-        
-        /* Add Space Grotesk font styling */
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
-      `}</style>
+      {/* Use a proper way to include the styles without causing React warnings */}
+      <style dangerouslySetInnerHTML={{ __html: customStyles }} />
+      
+      {/* Import fonts with a proper link tag */}
+      <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
     </Dropdown>
   );
 };
