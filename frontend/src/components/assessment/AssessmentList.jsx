@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FileEarmarkPdf, Calendar, ArrowRight, PlusCircle, CheckCircle, ClockHistory } from 'react-bootstrap-icons';
+import { FileEarmarkPdf, Calendar, ArrowRight, PlusCircle } from 'react-bootstrap-icons';
 import Loading from '../common/Loading';
 import ErrorMessage from '../common/Error';
+import apiClient from '../../config/apiClient';
+import { getErrorMessage } from '../../config/apiConfig';
 
 const AssessmentList = ({ skillId, isSkillSharer }) => {
   const [assessments, setAssessments] = useState([]);
@@ -18,26 +20,21 @@ const AssessmentList = ({ skillId, isSkillSharer }) => {
         setError('');
 
         if (!isSkillSharer) {
+          // Determine the endpoint based on whether a skillId is provided
           const endpoint = skillId
-            ? `/api/skills/${skillId}/assessments`
-            : '/api/assessments';
+            ? `/skills/${skillId}/assessments`
+            : '/assessments';
 
-          const assessmentResponse = await fetch(endpoint, {
-            method: 'GET',
+          // Fetch assessments using apiClient
+          const assessmentResponse = await apiClient.get(endpoint, {
             headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            },
-            cache: 'no-store'
+              'Cache-Control': 'no-store'
+            }
           });
 
-          if (!assessmentResponse.ok) {
-            throw new Error(`Failed to fetch assessments: ${assessmentResponse.status}`);
-          }
-
-          const assessmentData = await assessmentResponse.json();
-
           let assessmentList = [];
+          const assessmentData = assessmentResponse.data;
+
           if (assessmentData.success && Array.isArray(assessmentData.assessments)) {
             assessmentList = assessmentData.assessments;
           } else if (Array.isArray(assessmentData)) {
@@ -49,26 +46,26 @@ const AssessmentList = ({ skillId, isSkillSharer }) => {
 
           setAssessments(assessmentList);
 
-          const submissionsResponse = await fetch('/api/assessments/submissions/learner', {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            }
-          });
-
-          if (submissionsResponse.ok) {
-            const submissionsData = await submissionsResponse.json();
-
+          // Fetch submissions using apiClient
+          try {
+            const submissionsResponse = await apiClient.get('/assessments/submissions/learner');
+            
+            const submissionsData = submissionsResponse.data;
             if (submissionsData.success && Array.isArray(submissionsData.submissions)) {
               setSubmissions(submissionsData.submissions);
             }
+          } catch (submissionError) {
+            console.warn('Error fetching submissions:', submissionError);
+            console.warn('Error details:', getErrorMessage(submissionError));
+            // Continue even if submissions fail to load
+            setSubmissions([]);
           }
         } else {
           setAssessments([]);
         }
       } catch (err) {
         console.error('Error fetching data:', err);
+        console.error('Error details:', getErrorMessage(err));
         setError('Failed to load assessments. Please try refreshing the page.');
       } finally {
         setLoading(false);

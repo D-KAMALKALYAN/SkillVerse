@@ -65,21 +65,22 @@ const TeacherProfilePage = () => {
     initializeData();
   }, [teacherId]);
   
-  const handleBackNavigation = () => {
+ const handleBackNavigation = () => {
     if (isLoggedIn) {
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
     } else {
-      navigate('/');
+      navigate('/', { replace: true });
     }
   };
   
+  // FIXED: Updated navigation to use replace: true to avoid URL issues
   const handleBookSession = () => {
     if (isLoggedIn) {
-      navigate('/match/learning');
+      navigate('/match/learning', { replace: true });
     } else {
       // Store the current path to redirect back after login
       localStorage.setItem('redirectAfterLogin', `/teacher/${teacherId}`);
-      navigate('/register');
+      navigate('/register', { replace: true });
     }
   };
   

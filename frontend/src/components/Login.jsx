@@ -50,9 +50,10 @@ const Login = () => {
       // Navigate to dashboard - the dashboard will handle check-in notifications
       setTimeout(() => navigate('/dashboard'), 1500);
     } catch (err) {
-      let errorMsg = 'Something went wrong. Please try again later.';
-      if (err.response) errorMsg = err.response.data.msg || errorMsg;
-      else if (err.request) errorMsg = 'Network error: Unable to reach the server.';
+      // Direct error message handling
+      let errorMsg = err.message || 'Something went wrong. Please try again later.';
+      
+      console.log('[Login] Error details:', err);
       setMessage({ type: 'danger', text: errorMsg });
     } finally {
       setLoading(false);
