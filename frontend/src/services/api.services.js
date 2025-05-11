@@ -1,7 +1,7 @@
 // src/services/api.js
 // const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
 
-import apiConfig from './apiConfig';
+import apiConfig from '../config/apiConfig';
 const BACKEND_URL = apiConfig.BACKEND_URL;
 // Helper function to handle API errors
 const handleApiError = async (response) => {

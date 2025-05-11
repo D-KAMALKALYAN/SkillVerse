@@ -1,6 +1,6 @@
 // services/requestService.js
 // const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-import apiConfig from './apiConfig';
+import apiConfig from '../config/apiConfig';
 const BACKEND_URL = apiConfig.BACKEND_URL;
 // Fetch learner requests
 export const fetchLearnerRequests = async (userId) => {

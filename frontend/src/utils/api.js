@@ -5,8 +5,8 @@
  * handling user profiles, skills, and account management.
  */
 
-import apiConfig from './apiConfig';
-import apiClient, { getErrorMessage } from './apiClient';
+import apiConfig from '../config/apiConfig';
+import apiClient, { getErrorMessage } from '../config/apiClient';
 
 /**
  * Fetch complete user profile including skills and account details

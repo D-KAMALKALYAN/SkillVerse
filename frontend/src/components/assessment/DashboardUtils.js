@@ -5,8 +5,8 @@
  * Refactored to use apiClient and apiConfig for better consistency and error handling
  */
 
-import apiClient from './apiClient';
-import apiConfig from './apiConfig';
+import apiClient from '../../config/apiClient';
+import apiConfig from '../../config/apiConfig';
 
 /**
  * Fetch assessment statistics for a specific skill
