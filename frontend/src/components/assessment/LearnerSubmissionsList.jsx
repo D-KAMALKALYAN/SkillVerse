@@ -8,6 +8,8 @@ import {
 import Loading from '../common/Loading';
 import Error from '../common/Error';
 import FeedbackModal from './FeedbackModal';
+import apiClient from '../../config/apiClient'; // Import apiClient
+import apiConfig from '../../config/apiConfig'; // Import apiConfig
 
 const LearnerSubmissionsList = ({ userId }) => {
   const [submissions, setSubmissions] = useState([]);
@@ -25,20 +27,11 @@ const LearnerSubmissionsList = ({ userId }) => {
         setLoading(true);
         setError('');
         
-        const response = await fetch('/api/assessments/submissions/learner', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          },
-          cache: 'no-store'
-        });
+        // Replace fetch with apiClient
+        const response = await apiClient.get('/assessments/submissions/learner');
         
-        if (!response.ok) {
-          throw new Error(`Failed to fetch submissions: ${response.status}`);
-        }
-        
-        const data = await response.json();
+        // With axios, the data is already parsed from JSON
+        const data = response.data;
         
         if (data.success && Array.isArray(data.submissions)) {
           setSubmissions(data.submissions);
@@ -47,7 +40,11 @@ const LearnerSubmissionsList = ({ userId }) => {
         }
       } catch (err) {
         console.error('Error fetching submissions:', err);
-        setError('Failed to load your submissions. Please try refreshing the page.');
+        // Use the getErrorMessage utility from apiClient
+        const errorMessage = apiConfig.getErrorMessage ? 
+          apiConfig.getErrorMessage(err) : 
+          'Failed to load your submissions. Please try refreshing the page.';
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -314,12 +311,12 @@ const LearnerSubmissionsList = ({ userId }) => {
         
         <div className="d-flex flex-wrap align-items-center mt-4 gap-2">
         <button 
-  className={`btn ${filter === 'all' ? 'btn-light text-primary' : 'btn-outline-light'} rounded-pill px-3 py-2 d-flex align-items-center justify-content-center gap-2 text-nowrap overflow-visible`}
-  onClick={() => setFilter('all')}
->
-  <FileEarmark size={16} />
-  <span className="d-inline-block">All ({submissionCounts.all})</span>
-</button>
+          className={`btn ${filter === 'all' ? 'btn-light text-primary' : 'btn-outline-light'} rounded-pill px-3 py-2 d-flex align-items-center justify-content-center gap-2 text-nowrap overflow-visible`}
+          onClick={() => setFilter('all')}
+        >
+          <FileEarmark size={16} />
+          <span className="d-inline-block">All ({submissionCounts.all})</span>
+        </button>
           <button 
             className={`btn ${filter === 'submitted' ? 'btn-info text-white' : 'btn-outline-light'} rounded-pill px-4 py-2 d-flex align-items-center gap-2`}
             onClick={() => setFilter('submitted')}

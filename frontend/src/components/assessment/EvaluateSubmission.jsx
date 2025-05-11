@@ -12,6 +12,8 @@ import {
 } from 'react-bootstrap-icons';
 import Loading from '../common/Loading';
 import ErrorComponent from '../common/Error';
+import apiConfig from '../../config/apiConfig';
+import { getErrorMessage } from '../../config/apiConfig';
 
 const EvaluateSubmission = ({ skillId, userId }) => {
   const { submissionId } = useParams();
@@ -38,34 +40,20 @@ const EvaluateSubmission = ({ skillId, userId }) => {
         // If we're in list view mode (no submissionId), fetch the list of pending submissions
         if (!submissionId) {
           const url = skillId
-            ? `/api/assessments/${skillId}/pending-submissions`
-            : '/api/assessments/pending-submissions';
+            ? `/assessments/${skillId}/pending-submissions`
+            : '/assessments/pending-submissions';
 
-          const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            }
-          });
+          const response = await apiConfig.client.get(url);
 
-          if (!response.ok) {
-            throw new Error(`Failed to fetch submissions: ${response.status}`);
-          }
-
-          const data = await response.json();
-
-          console.log('Pending submissions:', data);
-
-          if (data.success && data.submissions) {
-            setPendingSubmissions(data.submissions);
+          if (response.data.success && response.data.submissions) {
+            setPendingSubmissions(response.data.submissions);
           } else {
             setPendingSubmissions([]);
           }
         }
       } catch (err) {
         console.error('Error fetching pending submissions:', err);
-        setError('Failed to load pending submissions. Please try again.');
+        setError(getErrorMessage(err));
       } finally {
         setLoading(false);
       }
@@ -83,28 +71,16 @@ const EvaluateSubmission = ({ skillId, userId }) => {
         setLoading(true);
         setError('');
 
-        const response = await fetch(`/api/assessments/submission/${submissionId}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          }
-        });
+        const response = await apiConfig.client.get(`/assessments/submission/${submissionId}`);
 
-        if (!response.ok) {
-          throw new Error(`Failed to fetch submission: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data.success && data.submission) {
-          setSubmission(data.submission);
+        if (response.data.success && response.data.submission) {
+          setSubmission(response.data.submission);
 
           // Initialize scores and feedback if already evaluated
-          if (data.submission.evaluation) {
-            setScores(data.submission.evaluation.scores || [0, 0, 0, 0, 0]);
-            setFeedback(data.submission.evaluation.feedback || ['', '', '', '', '']);
-            setOverallFeedback(data.submission.evaluation.overallFeedback || '');
+          if (response.data.submission.evaluation) {
+            setScores(response.data.submission.evaluation.scores || [0, 0, 0, 0, 0]);
+            setFeedback(response.data.submission.evaluation.feedback || ['', '', '', '', '']);
+            setOverallFeedback(response.data.submission.evaluation.overallFeedback || '');
           } else {
             // Reset form if not evaluated
             setScores([0, 0, 0, 0, 0]);
@@ -116,7 +92,7 @@ const EvaluateSubmission = ({ skillId, userId }) => {
         }
       } catch (err) {
         console.error('Error:', err);
-        setError(err.message || 'Failed to load submission');
+        setError(getErrorMessage(err));
       } finally {
         setLoading(false);
       }
@@ -156,30 +132,24 @@ const EvaluateSubmission = ({ skillId, userId }) => {
       const totalScore = calculateTotalScore();
       const averageScore = calculateAverageScore();
 
-      // Updated endpoint and HTTP method to match backend route
-      const response = await fetch(`/api/assessments/submission/${submissionId}/evaluate`, {
-        method: 'PATCH', // Changed from POST to PATCH
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'x-socket-id': localStorage.getItem('socketId') || 'no-socket',
-        },
-        body: JSON.stringify({
+      // Using apiClient for the PATCH request
+      const response = await apiConfig.client.patch(
+        `/assessments/submission/${submissionId}/evaluate`,
+        {
           scores,
           feedback,
           overallFeedback,
           totalScore,
           averageScore
-        })
-      });
+        },
+        {
+          headers: {
+            'x-socket-id': localStorage.getItem('socketId') || 'no-socket',
+          }
+        }
+      );
 
-      if (!response.ok) {
-        throw new Error(`Failed to submit evaluation: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
+      if (response.data.success) {
         // Navigate back to the submissions list
         if (skillId) {
           navigate(`/skills/${skillId}/assessments/evaluate`);
@@ -187,11 +157,11 @@ const EvaluateSubmission = ({ skillId, userId }) => {
           navigate('/assessments/evaluate');
         }
       } else {
-        throw new Error(data.message || 'Failed to submit evaluation');
+        throw new Error(response.data.message || 'Failed to submit evaluation');
       }
     } catch (err) {
       console.error('Error:', err);
-      setError(err.message || 'Failed to submit evaluation');
+      setError(getErrorMessage(err));
     } finally {
       setSaving(false);
     }

@@ -3,6 +3,9 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Inbox, CheckCircle, XCircle, FileEarmarkPdf, PersonCircle, ArrowRight, Search } from 'react-bootstrap-icons';
 import Loading from '../common/Loading';
 import Error from '../common/Error';
+import apiClient from '../../config/apiClient';
+import apiConfig from '../../config/apiConfig';
+import { getErrorMessage } from '../../config/apiClient';
 
 const SubmissionsList = ({ skillId }) => {
   const navigate = useNavigate();
@@ -19,31 +22,19 @@ const SubmissionsList = ({ skillId }) => {
         setError('');
         
         const url = skillId
-          ? `/api/assessments/skill/${skillId}/submissions`
-          : '/api/assessments/submissions/all';
+          ? `/assessments/skill/${skillId}/submissions`
+          : '/assessments/submissions/all';
         
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          }
-        });
+        const response = await apiClient.get(url);
         
-        if (!response.ok) {
-          throw new Error(`Failed to fetch submissions: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        if (data.success && data.submissions) {
-          setSubmissions(data.submissions);
+        if (response.data.success && response.data.submissions) {
+          setSubmissions(response.data.submissions);
         } else {
           throw new Error('No submissions found');
         }
       } catch (err) {
         console.error('Error:', err);
-        setError(err.message || 'Failed to load submissions');
+        setError(getErrorMessage(err) || 'Failed to load submissions');
       } finally {
         setLoading(false);
       }
@@ -214,14 +205,14 @@ const SubmissionsList = ({ skillId }) => {
                       )}
                     </td>
                     
-                   {/* Score */}
-<td>
-  {submission.status === "evaluated" && submission.marks ? (
-    <div className="fw-bold">{submission.marks}/50</div>
-  ) : (
-    <span className="text-muted">—</span>
-  )}
-</td>
+                    {/* Score */}
+                    <td>
+                      {submission.status === "evaluated" && submission.marks ? (
+                        <div className="fw-bold">{submission.marks}/50</div>
+                      ) : (
+                        <span className="text-muted">—</span>
+                      )}
+                    </td>
                     
                     {/* Actions */}
                     {/* <td>
