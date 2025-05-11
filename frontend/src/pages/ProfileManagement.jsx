@@ -24,13 +24,14 @@ import EditProfileModal from '../components/profile/modals/EditProfileModal';
 import SecurityQuestionsModal from '../components/profile/modals/SecurityQuestionsModal';
 import ProfileCard from '../components/profile/ProfileCard';
 
-// API
+// API - Import refactored API functions
 import { 
   fetchUserProfile, 
   addSkill, 
   removeSkill, 
   updateProfile, 
-  updateSecurityQuestions 
+  updateSecurityQuestions,
+  checkApiStatus
 } from '../utils/api';
 
 // Constants
@@ -39,8 +40,8 @@ import { SECURITY_QUESTIONS } from '../components/profile/shared/constants';
 const ProfileManagement = () => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [apiConnected, setApiConnected] = useState(true);
 
   const [activeTab, setActiveTab] = useState('skills');
   const [profile, setProfile] = useState({ 
@@ -78,6 +79,20 @@ const ProfileManagement = () => {
   ]);
   const [showSecurityQuestionsModal, setShowSecurityQuestionsModal] = useState(false);
   const [securityQuestionsError, setSecurityQuestionsError] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Check API connectivity on component mount
+  useEffect(() => {
+    const verifyApiConnection = async () => {
+      const isConnected = await checkApiStatus();
+      setApiConnected(isConnected);
+      if (!isConnected) {
+        console.warn('API connection failed. Some features may not work properly.');
+      }
+    };
+    
+    verifyApiConnection();
+  }, []);
 
   useEffect(() => {
     if (user?._id) {
@@ -87,7 +102,9 @@ const ProfileManagement = () => {
 
   const loadUserProfile = async () => {
     try {
-      const profileData = await fetchUserProfile(user._id, token);
+      setIsLoading(true);
+      // No need to pass token - handled by apiClient
+      const profileData = await fetchUserProfile(user._id);
       
       setProfile(profileData);
       
@@ -107,7 +124,13 @@ const ProfileManagement = () => {
       }
     } catch (error) {
       console.error('Error loading profile:', error);
-      // Handle error appropriately
+      // Show user-friendly error message
+      setProfileEditErrors(prev => ({
+        ...prev,
+        general: error.message || 'Failed to load profile. Please try again.'
+      }));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -115,15 +138,16 @@ const ProfileManagement = () => {
     try {
       const skillType = type === 'teach' ? 'teaching' : 'learning';
       
+      // No need to pass token - handled by apiClient
       const newSkill = await addSkill({
         userId: user._id,
         skillName: skillData.name,
         proficiencyLevel: skillData.proficiency,
         description: skillData.description,
         type: skillType,
-        isTeaching: type === 'teach', // Add this field
-        isLearning: type === 'learn'  // Add this field
-      }, token);
+        isTeaching: type === 'teach',
+        isLearning: type === 'learn'
+      });
       
       // Update state with new skill
       setProfile(prev => ({
@@ -132,12 +156,15 @@ const ProfileManagement = () => {
       }));
     } catch (error) {
       console.error('Error adding skill:', error);
+      // Show user-friendly error
+      alert(`Failed to add skill: ${error.message}`);
     }
   };
 
   const handleRemoveSkill = async (type, skillId) => {
     try {
-      await removeSkill(skillId, token);
+      // No need to pass token - handled by apiClient
+      await removeSkill(skillId);
       
       const skillType = type === 'teach' ? 'teachingSkills' : 'learningSkills';
       
@@ -148,6 +175,8 @@ const ProfileManagement = () => {
       }));
     } catch (error) {
       console.error('Error removing skill:', error);
+      // Show user-friendly error
+      alert(`Failed to remove skill: ${error.message}`);
     }
   };
 
@@ -179,7 +208,7 @@ const ProfileManagement = () => {
         }
       }
 
-      // Proceed with update
+      // Proceed with update - no need to pass token
       const updatedProfile = await updateProfile({
         userId: user._id,
         name: formData.name,
@@ -187,7 +216,7 @@ const ProfileManagement = () => {
         country: formData.country,
         currentPassword: formData.currentPassword,
         newPassword: passwordChangeMode ? formData.newPassword : undefined
-      }, token);
+      });
 
       // Update state with new profile data
       setProfile(prev => ({
@@ -245,7 +274,8 @@ const ProfileManagement = () => {
         return;
       }
 
-      await updateSecurityQuestions(securityQuestions, token);
+      // No need to pass token - handled by apiClient
+      await updateSecurityQuestions(securityQuestions);
       
       // Update local state
       setProfile(prev => ({
@@ -299,6 +329,38 @@ const ProfileManagement = () => {
   const toggleMobileNav = () => {
     setMobileNavOpen(!mobileNavOpen);
   };
+
+  // API connection warning
+  const renderApiWarning = () => {
+    if (apiConnected) return null;
+    
+    return (
+      <div className="alert alert-warning mb-4" role="alert">
+        <div className="d-flex align-items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="bi bi-exclamation-triangle-fill me-2" viewBox="0 0 16 16">
+            <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+          </svg>
+          <div>
+            <strong>Connection issue detected.</strong> Some features may not work properly. Please check your internet connection.
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-vh-100 d-flex align-items-center justify-content-center" style={{ background: '#f8fafc' }}>
+        <div className="text-center">
+          <div className="spinner-border text-primary mb-3" role="status" style={{ width: '3rem', height: '3rem' }}>
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <h5>Loading your profile...</h5>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-vh-100" style={{ background: '#f8fafc' }}>
@@ -363,6 +425,8 @@ const ProfileManagement = () => {
       )}
       
       <Container fluid className="py-4">
+        {renderApiWarning()}
+        
         <Row>
           {/* Left sidebar - Hidden on mobile */}
           <Col md={3} className="d-none d-md-block mb-4">

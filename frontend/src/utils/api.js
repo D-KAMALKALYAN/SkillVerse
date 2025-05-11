@@ -1,29 +1,27 @@
-// src/utils/api.js
-import { BACKEND_URL } from '../components/profile/shared/constants';
+/**
+ * API Service
+ * 
+ * Centralized API functions using apiConfig and apiClient for
+ * handling user profiles, skills, and account management.
+ */
 
-export const fetchUserProfile = async (userId, token) => {
+import apiConfig from './apiConfig';
+import apiClient, { getErrorMessage } from './apiClient';
+
+/**
+ * Fetch complete user profile including skills and account details
+ * @param {string} userId - The user ID
+ * @returns {Promise<Object>} User profile data
+ */
+export const fetchUserProfile = async (userId) => {
   try {
     // First, fetch skills
-    const skillsResponse = await fetch(`${BACKEND_URL}/api/skills/${userId}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    if (!skillsResponse.ok) throw new Error('Failed to fetch skills');
-    const skillsData = await skillsResponse.json();
+    const skillsResponse = await apiClient.get(`/skills/${userId}`);
+    const skillsData = skillsResponse.data;
 
     // Then, fetch user details
-    const userResponse = await fetch(`${BACKEND_URL}/api/users/${userId}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    if (!userResponse.ok) throw new Error('Failed to fetch user profile');
-    const userData = await userResponse.json();
+    const userResponse = await apiClient.get(`/users/${userId}`);
+    const userData = userResponse.data;
 
     return {
       teachingSkills: skillsData.teachingSkills || [], 
@@ -38,102 +36,92 @@ export const fetchUserProfile = async (userId, token) => {
     };
   } catch (error) {
     console.error('Error fetching profile:', error);
-    throw error;
+    const errorMessage = getErrorMessage(error);
+    throw new Error(errorMessage);
   }
 };
 
-export const addSkill = async (skillData, token) => {
+/**
+ * Add a new skill to the user's profile
+ * @param {Object} skillData - Skill data to add
+ * @returns {Promise<Object>} Added skill data
+ */
+export const addSkill = async (skillData) => {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/skills`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify(skillData),
-    });
-
-    if (!response.ok) throw new Error('Failed to add skill');
-    return await response.json();
+    const response = await apiClient.post('/skills', skillData);
+    return response.data;
   } catch (error) {
     console.error('Error adding skill:', error);
-    throw error;
+    const errorMessage = getErrorMessage(error);
+    throw new Error(errorMessage);
   }
 };
 
-export const removeSkill = async (skillId, token) => {
+/**
+ * Remove a skill and its associated matches
+ * @param {string} skillId - ID of the skill to remove
+ * @returns {Promise<boolean>} Success status
+ */
+export const removeSkill = async (skillId) => {
   try {
     // First, delete the skill
-    const deleteSkillResponse = await fetch(`${BACKEND_URL}/api/skills/${skillId}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-
-    if (!deleteSkillResponse.ok) throw new Error('Failed to delete skill');
+    await apiClient.delete(`/skills/${skillId}`);
 
     // Then, delete any matches associated with this skill
-    const deleteMatchesResponse = await fetch(`${BACKEND_URL}/api/matches/by-skill/${skillId}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-
-    if (!deleteMatchesResponse.ok) throw new Error('Failed to delete associated matches');
+    await apiClient.delete(`/matches/by-skill/${skillId}`);
     
     return true;
   } catch (error) {
     console.error('Error removing skill:', error);
-    throw error;
+    const errorMessage = getErrorMessage(error);
+    throw new Error(errorMessage);
   }
 };
 
-export const updateProfile = async (profileData, token) => {
+/**
+ * Update user profile information
+ * @param {Object} profileData - Profile data to update
+ * @returns {Promise<Object>} Updated profile data
+ */
+export const updateProfile = async (profileData) => {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/profile/update`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(profileData),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to update profile');
-    }
-
-    return data;
+    const response = await apiClient.put('/profile/update', profileData);
+    return response.data;
   } catch (error) {
     console.error('Error updating profile:', error);
-    throw error;
+    const errorMessage = getErrorMessage(error);
+    throw new Error(errorMessage);
   }
 };
 
-export const updateSecurityQuestions = async (securityQuestions, token) => {
+/**
+ * Update security questions for password recovery
+ * @param {Array} securityQuestions - Array of security questions and answers
+ * @returns {Promise<Object>} Updated security questions data
+ */
+export const updateSecurityQuestions = async (securityQuestions) => {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/profile/security-questions`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ securityQuestions }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to update security questions');
-    }
-
-    return data;
+    const response = await apiClient.put('/profile/security-questions', { securityQuestions });
+    return response.data;
   } catch (error) {
     console.error('Error updating security questions:', error);
-    throw error;
+    const errorMessage = getErrorMessage(error);
+    throw new Error(errorMessage);
   }
 };
+
+/**
+ * Health check to verify API connectivity
+ * @returns {Promise<boolean>} API health status
+ */
+export const checkApiStatus = async () => {
+  try {
+    return await apiConfig.checkHealth();
+  } catch (error) {
+    console.error('API health check failed:', error);
+    return false;
+  }
+};
+
+// Export the full API config for direct access if needed
+export { apiConfig, apiClient };

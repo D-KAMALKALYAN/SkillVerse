@@ -43,8 +43,8 @@ const AssessmentStats = ({ skillId }) => {
         
         // Determine the correct endpoint based on presence of skillId
         const endpoint = skillId 
-          ? `/api/assessments/${skillId}/assessment-stats` 
-          : '/api/assessments/general-stats';
+          ? `/assessments/${skillId}/assessment-stats` 
+          : '/assessments/general-stats';
         
         console.log('Using endpoint:', endpoint);
         
