@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, Button, Dropdown, Nav } from 'react-bootstrap';
-import { PersonFill, BoxArrowRight, ThreeDotsVertical, Globe } from 'react-bootstrap-icons';
+import { PersonFill, BoxArrowRight, ThreeDotsVertical, Globe, Speedometer2 } from 'react-bootstrap-icons';
 import NotificationCenter from '../NotificationCenter';
 import useResponsive from '../../hooks/useResponsive';
 import styled, { keyframes } from 'styled-components';
 import { breakpoints } from '../../styles/breakpoints';
+import NavbarSearchDropdown from '../search/NavbarSearchDropdown';
 
 // Performance optimized animations
 const rotateGlobe = keyframes`
@@ -183,8 +184,57 @@ const MobileDropdownToggle = styled(Dropdown.Toggle)`
 
 const Header = ({ title, logout, navigate }) => {
   const { isMobile } = useResponsive();
+  const [displayText, setDisplayText] = useState('');
+  
+  const fullText = useMemo(() => 
+    isMobile ? title : `${title} - Skill Barter`
+  , [isMobile, title]);
+  
+  const [showCursor, setShowCursor] = useState(true);
+  
+  const isLowEndDevice = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      return navigator.hardwareConcurrency <= 4;
+    }
+    return false;
+  }, []);
+  
+  const handleTypingAnimation = useCallback(() => {
+    if (isLowEndDevice) {
+      if (displayText !== fullText) {
+        setDisplayText(fullText);
+      }
+      return () => {};
+    }
+    
+    if (displayText === fullText) {
+      const timeout = setTimeout(() => setShowCursor(false), 3000);
+      return () => clearTimeout(timeout);
+    }
+    
+    const timeout = setTimeout(() => {
+      setDisplayText(fullText.substring(0, displayText.length + 1));
+    }, isMobile ? 150 : 100);
+    
+    return () => clearTimeout(timeout);
+  }, [displayText, fullText, isMobile, isLowEndDevice]);
 
-  const renderDesktopActions = (
+  useEffect(() => {
+    return handleTypingAnimation();
+  }, [handleTypingAnimation]);
+  
+  const resetAnimation = useCallback(() => {
+    if (isLowEndDevice) return;
+    setDisplayText('');
+    setShowCursor(true);
+  }, [isLowEndDevice]);
+
+  useEffect(() => {
+    const interval = setInterval(resetAnimation, isMobile ? 15000 : 10000);
+    return () => clearInterval(interval);
+  }, [resetAnimation, isMobile]);
+
+  const renderDesktopActions = useMemo(() => (
     <div className="desktop-actions">
       <ActionButton 
         variant="primary" 
@@ -193,7 +243,7 @@ const Header = ({ title, logout, navigate }) => {
           background: 'linear-gradient(to right, #3b82f6, #1e40af)'
         }}
       >
-        <i className="bi bi-speedometer2 me-2"></i> Dashboard
+        <Speedometer2 /> {!isMobile && 'Dashboard'}
       </ActionButton>
       <ActionButton 
         variant="primary" 
@@ -202,7 +252,7 @@ const Header = ({ title, logout, navigate }) => {
           background: 'linear-gradient(to right, #3b82f6, #1e40af)'
         }}
       >
-        <PersonFill /> Profile
+        <PersonFill /> {!isMobile && 'Profile'}
       </ActionButton>
       <ActionButton 
         variant="danger" 
@@ -211,12 +261,12 @@ const Header = ({ title, logout, navigate }) => {
           background: 'linear-gradient(to right, #ef4444, #b91c1c)'
         }}
       >
-        <BoxArrowRight /> Logout
+        <BoxArrowRight /> {!isMobile && 'Logout'}
       </ActionButton>
     </div>
-  );
+  ), [isMobile, navigate, logout]);
 
-  const renderMobileMenu = (
+  const renderMobileMenu = useMemo(() => (
     <Dropdown align="end" className="mobile-menu">
       <MobileDropdownToggle 
         variant="light" 
@@ -237,7 +287,7 @@ const Header = ({ title, logout, navigate }) => {
               background: 'linear-gradient(135deg, #3b82f6, #1e40af)',
               color: 'white'
             }}>
-            <i className="bi bi-speedometer2" style={{ fontSize: '14px' }}></i>
+            <Speedometer2 size={14} />
           </div>
           <span>Dashboard</span>
         </Dropdown.Item>
@@ -273,7 +323,7 @@ const Header = ({ title, logout, navigate }) => {
         </Dropdown.Item>
       </MobileDropdownMenu>
     </Dropdown>
-  );
+  ), [navigate, logout]);
 
   return (
     <ResponsiveHeader 
@@ -289,14 +339,20 @@ const Header = ({ title, logout, navigate }) => {
             
             <EnhancedTitle $isMobile={isMobile}>
               <div className="title-container">
-                <h1 className="main-title">{title}</h1>
-                {!isMobile && <div className="subtitle">Skill Barter Platform</div>}
+                <h1 className="main-title">
+                  {displayText || fullText}
+                  {showCursor && !isLowEndDevice && <span className="cursor">|</span>}
+                </h1>
+                {!isMobile && <div className="subtitle">Exchange Expertise Globally</div>}
               </div>
             </EnhancedTitle>
           </div>
           
           <div className="right-section">
             <div className="search-notification-container">
+              <Nav.Item>
+                <NavbarSearchDropdown />
+              </Nav.Item>
               <NotificationWrapper>
                 <NotificationCenter />
               </NotificationWrapper>

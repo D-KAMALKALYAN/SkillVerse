@@ -443,15 +443,15 @@ const SkillSection = memo(({
       
       <ContentWrapper>
         <SkillsList>
-          {skills.length === 0 ? (
+        {skills.length === 0 ? (
             <EmptyState>
-              <p className="text-muted mb-0">
+            <p className="text-muted mb-0">
                 {isTeaching 
-                  ? "You haven't added any teaching skills yet." 
-                  : "You haven't added any learning skills yet."}
-              </p>
+                ? "You haven't added any teaching skills yet." 
+                : "You haven't added any learning skills yet."}
+            </p>
             </EmptyState>
-          ) : (
+        ) : (
             skills.map((skill) => (
               <SkillItem 
                 key={skill._id} 
@@ -462,26 +462,26 @@ const SkillSection = memo(({
                 badgeTextColor={badgeTextColor}
               />
             ))
-          )}
+        )}
         </SkillsList>
-        
+      
         <AddSkillForm>
           <h6 className="fw-semibold mb-4">Add New {isTeaching ? 'Teaching' : 'Learning'} Skill</h6>
-          
-          {validation.error && (
+        
+        {validation.error && (
             <Alert variant="danger" className="py-2 px-3 mb-3 rounded-lg">
-              {validation.message}
-            </Alert>
-          )}
-          
+            {validation.message}
+          </Alert>
+        )}
+        
           <FormGroup>
             <FormLabel>Skill Name</FormLabel>
             <InputWrapper ref={inputRef}>
               <StyledFormControl 
-                type="text" 
-                placeholder="Enter skill name"
-                value={newSkill.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
+            type="text" 
+            placeholder="Enter skill name"
+            value={newSkill.name}
+            onChange={(e) => handleInputChange('name', e.target.value)}
                 onKeyDown={handleKeyDown}
                 autoComplete="off"
               />
@@ -504,35 +504,35 @@ const SkillSection = memo(({
           <FormGroup>
             <FormLabel>Proficiency Level</FormLabel>
             <StyledSelect 
-              value={newSkill.proficiency}
-              onChange={(e) => handleInputChange('proficiency', e.target.value)}
-            >
-              <option value="Beginner">Beginner</option>
-              <option value="Intermediate">Intermediate</option>
-              <option value="Expert">Expert</option>
+            value={newSkill.proficiency}
+            onChange={(e) => handleInputChange('proficiency', e.target.value)}
+          >
+            <option value="Beginner">Beginner</option>
+            <option value="Intermediate">Intermediate</option>
+            <option value="Expert">Expert</option>
             </StyledSelect>
           </FormGroup>
           
           <FormGroup>
             <FormLabel>Description (Optional)</FormLabel>
             <StyledTextarea 
-              as="textarea" 
+            as="textarea" 
               rows={3}
-              placeholder="Add a brief description of your experience with this skill"
-              value={newSkill.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-            />
+            placeholder="Add a brief description of your experience with this skill"
+            value={newSkill.description}
+            onChange={(e) => handleInputChange('description', e.target.value)}
+          />
           </FormGroup>
-          
-          <div className="d-grid">
+        
+        <div className="d-grid">
             <AddButton 
-              onClick={handleAdd}
+            onClick={handleAdd}
               gradient={buttonGradient}
-            >
-              <PlusCircleFill className="me-2" size={18} />
+          >
+            <PlusCircleFill className="me-2" size={18} />
               <span>Add Skill</span>
             </AddButton>
-          </div>
+        </div>
         </AddSkillForm>
       </ContentWrapper>
     </SectionContainer>

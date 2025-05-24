@@ -278,12 +278,12 @@ const SessionsList = () => {
   }
   
   return (
-    <Container className="py-4 py-md-5">
+    <Container className="py-4 py-md-5 px-3 px-md-4">
       {/* Header Section */}
       <Card className="mb-4 shadow-lg border-0 rounded-4 overflow-hidden">
         <div style={{ 
           background: 'linear-gradient(135deg, #0b1437 0%, #1a237e 100%)',
-          padding: '1.5rem',
+          padding: '1.25rem',
           color: 'white',
           position: 'relative',
           overflow: 'hidden'
@@ -326,10 +326,10 @@ const SessionsList = () => {
               </Button>
             </Col>
             <Col>
-              <h2 className="mb-0" style={{ fontWeight: '800', letterSpacing: '-0.5px' }}>
+              <h2 className="mb-0 h3 h2-md" style={{ fontWeight: '800', letterSpacing: '-0.5px' }}>
                 Your Learning Sessions
               </h2>
-              <p className="text-white-50 mb-0">
+              <p className="text-white-50 mb-0 small">
                 {processedSessions.length} {processedSessions.length === 1 ? 'session' : 'sessions'} found
               </p>
             </Col>
@@ -344,15 +344,15 @@ const SessionsList = () => {
             <div className="me-3">
               <div className="rounded-circle d-flex align-items-center justify-content-center" 
                 style={{ 
-                  width: '48px', 
-                  height: '48px', 
+                  width: '40px', 
+                  height: '40px', 
                   background: 'linear-gradient(135deg, #06b6d4, #0891b2)',
                   boxShadow: '0 10px 15px -3px rgba(6, 182, 212, 0.3)'
                 }}>
-                <CalendarCheck size={22} className="text-white" />
+                <CalendarCheck size={20} className="text-white" />
               </div>
             </div>
-            <h4 className="fw-bold mb-0" style={{ color: '#0891b2' }}>Active & Upcoming Sessions</h4>
+            <h4 className="fw-bold mb-0 h5 h4-md" style={{ color: '#0891b2' }}>Active & Upcoming Sessions</h4>
           </div>
           
           {/* Sessions Cards - Responsive with Flex */}
@@ -376,15 +376,15 @@ const SessionsList = () => {
             <div className="me-3">
               <div className="rounded-circle d-flex align-items-center justify-content-center" 
                 style={{ 
-                  width: '48px', 
-                  height: '48px', 
+                  width: '40px', 
+                  height: '40px', 
                   background: 'linear-gradient(135deg, #ef4444, #b91c1c)',
                   boxShadow: '0 10px 15px -3px rgba(239, 68, 68, 0.3)'
                 }}>
-                <XCircleFill size={22} className="text-white" />
+                <XCircleFill size={20} className="text-white" />
               </div>
             </div>
-            <h4 className="fw-bold mb-0" style={{ color: '#b91c1c' }}>Canceled Sessions</h4>
+            <h4 className="fw-bold mb-0 h5 h4-md" style={{ color: '#b91c1c' }}>Canceled Sessions</h4>
           </div>
           
           {/* Sessions Cards - Responsive with Flex */}
@@ -408,15 +408,15 @@ const SessionsList = () => {
             <div className="me-3">
               <div className="rounded-circle d-flex align-items-center justify-content-center" 
                 style={{ 
-                  width: '48px', 
-                  height: '48px', 
+                  width: '40px', 
+                  height: '40px', 
                   background: 'linear-gradient(135deg, #3b82f6, #1e40af)',
                   boxShadow: '0 10px 15px -3px rgba(59, 130, 246, 0.3)'
                 }}>
-                <ClockFill size={22} className="text-white" />
+                <ClockFill size={20} className="text-white" />
               </div>
             </div>
-            <h4 className="fw-bold mb-0" style={{ color: '#1e40af' }}>Past Sessions</h4>
+            <h4 className="fw-bold mb-0 h5 h4-md" style={{ color: '#1e40af' }}>Past Sessions</h4>
           </div>
           
           {/* Sessions Cards - Responsive with Flex */}
@@ -498,7 +498,7 @@ const SessionCard = ({ session, formatDateTime, onViewDetails }) => {
                       {session.statusInfo.status}
                     </Badge>
                   </div>
-                  <h5 className="fw-bold mb-0" style={{ color: '#0f172a' }}>
+                  <h5 className="fw-bold mb-0 text-truncate" style={{ color: '#0f172a' }}>
                     {session.title || `${session.skillName || 'Skill'} Session`}
                   </h5>
                 </Col>
@@ -510,14 +510,14 @@ const SessionCard = ({ session, formatDateTime, onViewDetails }) => {
                       <div className="text-muted small mb-1">Date & Time</div>
                       <div className="d-flex align-items-center">
                         <CalendarCheck className="me-2" style={{ color: '#3b82f6' }} />
-                        <div>{formatDateTime(session.startTime)}</div>
+                        <div className="text-truncate">{formatDateTime(session.startTime)}</div>
                       </div>
                     </div>
                     <div>
                       <div className="text-muted small mb-1">With</div>
                       <div className="d-flex align-items-center">
                         <PersonFill className="me-2" style={{ color: '#3b82f6' }} />
-                        <div>{session.otherPerson}</div>
+                        <div className="text-truncate">{session.otherPerson}</div>
                       </div>
                     </div>
                   </div>
@@ -538,7 +538,7 @@ const SessionCard = ({ session, formatDateTime, onViewDetails }) => {
                     >
                       {session.roleInfo.icon}
                     </div>
-                    <span style={{ color: session.roleInfo.color, fontWeight: '500' }}>
+                    <span className="text-truncate" style={{ color: session.roleInfo.color, fontWeight: '500' }}>
                       {session.roleInfo.role}
                     </span>
                   </div>

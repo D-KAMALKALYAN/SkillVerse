@@ -1,8 +1,11 @@
 // src/components/Leaderboard/index.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Container, Row, Col, Card, Button } from 'react-bootstrap';
 import { ArrowLeft, Trophy } from 'react-bootstrap-icons';
 import { useNavigate } from 'react-router-dom';
+import styled, { keyframes } from 'styled-components';
+import { breakpoints } from '../../styles/breakpoints';
+import useResponsive from '../../hooks/useResponsive';
 
 // Import components
 import LeaderboardTable from './LeaderboardTable';
@@ -15,9 +18,42 @@ import Pagination from './Pagination';
 // Import utilities
 import { fetchLeaderboardData, fetchUserRankData } from './utils/apiUtils';
 
+// Performance optimized animations
+const fadeIn = keyframes`
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
+
+// Mobile-optimized container
+const ResponsiveContainer = styled(Container)`
+  padding: ${props => props.$isMobile ? '1rem' : '1.5rem'};
+  animation: ${fadeIn} 0.5s ease-out;
+`;
+
+// Optimized card component
+const StyledCard = styled(Card)`
+  border: none;
+  border-radius: ${props => props.$isMobile ? '0.75rem' : '1rem'};
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+  overflow: hidden;
+  
+  &:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+`;
+
+// Optimized content wrapper
+const ContentWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${props => props.$isMobile ? '1rem' : '1.5rem'};
+`;
+
 const Leaderboard = () => {
   // Navigation
   const navigate = useNavigate();
+  const { isMobile } = useResponsive();
   
   // States
   const [leaderboardData, setLeaderboardData] = useState([]);
@@ -36,21 +72,64 @@ const Leaderboard = () => {
   const [isScrolledDown, setIsScrolledDown] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
+  // Memoized filter props
+  const filterProps = useMemo(() => ({
+    isScrolledDown,
+    timeFrame,
+    setTimeFrame,
+    showFilters,
+    setShowFilters,
+    category,
+    setCategory,
+    searchQuery,
+    setSearchQuery,
+    limit,
+    setLimit,
+    setPage
+  }), [
+    isScrolledDown,
+    timeFrame,
+    showFilters,
+    category,
+    searchQuery,
+    limit
+  ]);
+
+  // Memoized table props
+  const tableProps = useMemo(() => ({
+    isLoading,
+    error,
+    leaderboardData,
+    userRank,
+    sortBy,
+    sortDirection,
+    searchQuery,
+    setSearchQuery
+  }), [
+    isLoading,
+    error,
+    leaderboardData,
+    userRank,
+    sortBy,
+    sortDirection,
+    searchQuery
+  ]);
+
   // Handle scroll event for sticky header
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolledDown(window.scrollY > 100);
-    };
-    
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+  const handleScroll = useCallback(() => {
+    setIsScrolledDown(window.scrollY > 100);
   }, []);
 
-  // Fetch leaderboard data
   useEffect(() => {
-    const loadLeaderboardData = async () => {
-      setIsLoading(true);
-      
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
+
+  // Fetch leaderboard data
+  const loadLeaderboardData = useCallback(async () => {
+    setIsLoading(true);
+    
+    try {
       const result = await fetchLeaderboardData({
         timeFrame,
         category,
@@ -64,7 +143,6 @@ const Leaderboard = () => {
       setLeaderboardData(result.leaderboard);
       setTotalPages(result.totalPages);
       setError(result.error);
-      setIsLoading(false);
       
       // Fetch user's rank if not already fetched
       if (!userRank) {
@@ -74,80 +152,67 @@ const Leaderboard = () => {
           setUserDetails(userRankResult.details);
         }
       }
-    };
-    
-    loadLeaderboardData();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   }, [timeFrame, category, page, limit, sortBy, sortDirection, searchQuery, userRank]);
 
+  useEffect(() => {
+    loadLeaderboardData();
+  }, [loadLeaderboardData]);
+
   // Handle page change
-  const handlePageChange = (newPage) => {
+  const handlePageChange = useCallback((newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setPage(newPage);
       // Scroll to top of table on page change
-      document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
+      document.querySelector('.card')?.scrollIntoView({ behavior: 'smooth' });
     }
-  };
+  }, [totalPages]);
+
+  // Handle sort
+  const handleSort = useCallback((column) => {
+    setSortBy(column);
+    setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    setPage(1);
+  }, []);
 
   return (
-    <Container fluid className="py-4">
-      <LeaderboardHeader />
+    <ResponsiveContainer fluid $isMobile={isMobile}>
+      <ContentWrapper $isMobile={isMobile}>
+        <LeaderboardHeader />
 
-      {/* User stats section if logged in */}
-      {userRank && userDetails && (
-        <UserStatsCard userRank={userRank} userDetails={userDetails} />
-      )}
-      
-      {/* Leaderboard Panel */}
-      <Card className="border-0 shadow-sm">
-        <LeaderboardFilter 
-          isScrolledDown={isScrolledDown}
-          timeFrame={timeFrame}
-          setTimeFrame={setTimeFrame}
-          showFilters={showFilters}
-          setShowFilters={setShowFilters}
-          category={category}
-          setCategory={setCategory}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          limit={limit}
-          setLimit={setLimit}
-          setPage={setPage}
-        />
-        
-        <LeaderboardTable 
-          isLoading={isLoading}
-          error={error}
-          leaderboardData={leaderboardData}
-          userRank={userRank}
-          sortBy={sortBy}
-          sortDirection={sortDirection}
-          handleSort={(column) => {
-            if (sortBy === column) {
-              setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-            } else {
-              setSortBy(column);
-              setSortDirection('desc');
-            }
-            setPage(1);
-          }}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-        />
-        
-        {/* Integrate our new pagination component */}
-        {!isLoading && !error && totalPages > 1 && (
-          <Pagination 
-            page={page}
-            totalPages={totalPages}
-            handlePageChange={handlePageChange}
-          />
+        {/* User stats section if logged in */}
+        {userRank && userDetails && (
+          <UserStatsCard userRank={userRank} userDetails={userDetails} />
         )}
-      </Card>
-      
-      {/* Achievement Guide Card */}
-      <AchievementGuide />
-    </Container>
+        
+        {/* Leaderboard Panel */}
+        <StyledCard $isMobile={isMobile}>
+          <LeaderboardFilter {...filterProps} />
+          
+          <LeaderboardTable 
+            {...tableProps}
+            handleSort={handleSort}
+          />
+          
+          {/* Pagination */}
+          {!isLoading && !error && totalPages > 1 && (
+            <Pagination 
+              page={page}
+              totalPages={totalPages}
+              handlePageChange={handlePageChange}
+            />
+          )}
+        </StyledCard>
+        
+        {/* Achievement Guide Card */}
+        <AchievementGuide />
+      </ContentWrapper>
+    </ResponsiveContainer>
   );
 };
 
-export default Leaderboard;
+export default React.memo(Leaderboard);

@@ -43,13 +43,14 @@ const SecurityQuestionsModal = lazy(() => import('../components/profile/modals/S
 const PageContainer = styled.div`
   min-height: 100vh;
   background: #f8fafc;
+  overflow-x: hidden;
 `;
 
 const MobileNavToggle = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem;
+  padding: 0.875rem 1rem;
   background: linear-gradient(135deg, #0b1437 0%, #1a237e 100%);
   color: white;
   position: fixed;
@@ -58,7 +59,7 @@ const MobileNavToggle = styled.div`
   right: 0;
   z-index: 1000;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  height: 64px;
+  height: 60px;
 
   @media (min-width: 768px) {
     display: none;
@@ -86,17 +87,22 @@ const NavDrawerContent = styled.div`
   height: 100%;
   width: 85%;
   max-width: 320px;
-  padding: 1.5rem;
+  padding: 1.25rem;
   overflow-y: auto;
   box-shadow: 0 0 20px rgba(0,0,0,0.2);
   animation: slideIn 0.3s ease-out;
   position: relative;
+
+  @media (max-width: 360px) {
+    width: 100%;
+    padding: 1rem;
+  }
 `;
 
 const CloseButton = styled.button`
   position: absolute;
-  top: 1rem;
-  right: 1rem;
+  top: 0.75rem;
+  right: 0.75rem;
   background: none;
   border: none;
   color: #666;
@@ -118,11 +124,16 @@ const MobileHeader = styled.div`
   padding: 1rem;
   background: linear-gradient(135deg, #0b1437 0%, #1a237e 100%);
   color: white;
-  margin: -1.5rem -1.5rem 1.5rem -1.5rem;
+  margin: -1.25rem -1.25rem 1.25rem -1.25rem;
+
+  @media (max-width: 360px) {
+    margin: -1rem -1rem 1rem -1rem;
+    padding: 0.875rem;
+  }
 `;
 
 const ContentWrapper = styled.div`
-  padding-top: 64px; // Height of mobile header
+  padding-top: 60px; // Height of mobile header
 
   @media (min-width: 768px) {
     padding-top: 0;
@@ -135,24 +146,33 @@ const ContentCard = styled(Card)`
   overflow: hidden;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+  height: 100%;
 
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+
+  @media (max-width: 767.98px) {
+    border-radius: 0.75rem;
   }
 `;
 
 const CardHeader = styled(Card.Header)`
   background: white;
   border: 0;
-  padding: 1.5rem;
+  padding: 1.25rem;
   position: relative;
   z-index: 1;
+
+  @media (max-width: 767.98px) {
+    padding: 1rem;
+  }
 `;
 
 const IconWrapper = styled.div`
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -160,6 +180,22 @@ const IconWrapper = styled.div`
   margin-right: 1rem;
   background: ${props => props.gradient};
   box-shadow: 0 10px 15px -3px ${props => props.shadowColor};
+
+  @media (max-width: 767.98px) {
+    width: 36px;
+    height: 36px;
+    margin-right: 0.875rem;
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+
+    @media (max-width: 767.98px) {
+      width: 18px;
+      height: 18px;
+    }
+  }
 `;
 
 const LoadingSpinner = styled.div`
@@ -467,16 +503,18 @@ const ProfileManagement = () => {
           <button
             className="btn btn-link text-white p-0 me-3"
             onClick={navigateToDashboard}
+            aria-label="Go back to dashboard"
           >
-            <ChevronLeft size={24} />
+            <ChevronLeft size={22} />
           </button>
-          <h5 className="mb-0 fw-bold">{currentTab.title}</h5>
+          <h5 className="mb-0 fw-bold text-truncate">{currentTab.title}</h5>
         </div>
         <Button
           variant="outline-light"
           size="sm"
           className="rounded-pill"
           onClick={toggleMobileNav}
+          aria-label="Open settings menu"
         >
           <GearFill size={18} />
         </Button>
@@ -485,10 +523,10 @@ const ProfileManagement = () => {
       {mobileNavOpen && (
         <MobileNavDrawer onClick={toggleMobileNav}>
           <NavDrawerContent onClick={e => e.stopPropagation()}>
-            <CloseButton onClick={toggleMobileNav}>×</CloseButton>
+            <CloseButton onClick={toggleMobileNav} aria-label="Close menu">×</CloseButton>
             <MobileHeader>
-              <h4 className="mb-0">Profile Settings</h4>
-              <p className="text-white-50 mb-0">Manage your account</p>
+              <h4 className="mb-0 h5 h4-md">Profile Settings</h4>
+              <p className="text-white-50 mb-0 small">Manage your account</p>
             </MobileHeader>
             <ProfileNavigation
               activeTab={activeTab}
@@ -503,26 +541,26 @@ const ProfileManagement = () => {
       )}
       
       <ContentWrapper>
-        <Container fluid className="py-4">
+        <Container fluid className="py-3 py-md-4 px-3 px-md-4">
           {!apiConnected && (
             <div className="alert alert-warning mb-4" role="alert">
               <div className="d-flex align-items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="bi bi-exclamation-triangle-fill me-2" viewBox="0 0 16 16">
                   <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
                 </svg>
-                <div>
+                <div className="small">
                   <strong>Connection issue detected.</strong> Some features may not work properly. Please check your internet connection.
                 </div>
               </div>
             </div>
           )}
           
-          <Row>
-            <Col md={3} className="d-none d-md-block mb-4">
+          <Row className="g-3 g-md-4">
+            <Col md={3} className="d-none d-md-block">
               <ContentCard>
                 <div className="p-4" style={{ background: 'linear-gradient(135deg, #0b1437 0%, #1a237e 100%)', color: 'white' }}>
-                  <h4 className="fw-bold mb-0">Profile Settings</h4>
-                  <p className="text-white-50 mb-0">Manage your account</p>
+                  <h4 className="fw-bold mb-0 h5 h4-md">Profile Settings</h4>
+                  <p className="text-white-50 mb-0 small">Manage your account</p>
                 </div>
                 <ProfileNavigation 
                   activeTab={activeTab} 
@@ -534,19 +572,19 @@ const ProfileManagement = () => {
             
             <Col md={9}>
               <div className="content-area">
-                <ContentCard className="mb-4">
+                <ContentCard>
                   <CardHeader>
                     <div className="d-flex align-items-center">
                       <IconWrapper gradient={currentTab.gradient} shadowColor={currentTab.shadowColor}>
                         {currentTab.icon}
                       </IconWrapper>
                       <div>
-                        <h4 className="fw-bold mb-0">{currentTab.title}</h4>
-                        <p className="text-muted mb-0">{currentTab.subtitle}</p>
+                        <h4 className="fw-bold mb-0 h5 h4-md">{currentTab.title}</h4>
+                        <p className="text-muted mb-0 small">{currentTab.subtitle}</p>
                       </div>
                     </div>
                   </CardHeader>
-                  <Card.Body className="p-4">
+                  <Card.Body className="p-3 p-md-4">
                     {activeTab === 'skills' && (
                       <SkillsManagement 
                         teachingSkills={profile.teachingSkills} 
@@ -657,8 +695,50 @@ const ProfileManagement = () => {
           }
           
           &.active {
-            background: linear-gradient(135deg, #0b1437 0%, #1a237e 100%);
+            background: #2563eb;
             color: white;
+          }
+        }
+
+        /* Responsive Typography */
+        .h4-md {
+          @media (min-width: 768px) {
+            font-size: 1.5rem !important;
+          }
+        }
+
+        .h5-md {
+          @media (min-width: 768px) {
+            font-size: 1.25rem !important;
+          }
+        }
+
+        /* Responsive Spacing */
+        .p-md-4 {
+          @media (min-width: 768px) {
+            padding: 1.5rem !important;
+          }
+        }
+
+        .py-md-4 {
+          @media (min-width: 768px) {
+            padding-top: 1.5rem !important;
+            padding-bottom: 1.5rem !important;
+          }
+        }
+
+        .px-md-4 {
+          @media (min-width: 768px) {
+            padding-left: 1.5rem !important;
+            padding-right: 1.5rem !important;
+          }
+        }
+
+        /* Responsive Grid */
+        .g-md-4 {
+          @media (min-width: 768px) {
+            --bs-gutter-x: 1.5rem;
+            --bs-gutter-y: 1.5rem;
           }
         }
         `}

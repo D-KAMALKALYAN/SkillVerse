@@ -1,5 +1,5 @@
 // LearnerRequests.js - Main component
-import React, { useState, useEffect, useCallback, Suspense, memo } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, memo, lazy } from 'react';
 import { Container, Card, Button, Alert, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -17,9 +17,11 @@ import {
 import styled, { keyframes } from 'styled-components';
 import useResponsive from '../hooks/useResponsive';
 import { breakpoints } from '../styles/breakpoints';
-import RequestsList from './learner.requests/RequestsList';
-import EmptyState from './learner.requests/EmptyState';
 import { fetchLearnerRequests, updateRequestStatus } from '../services/requestService';
+
+// Lazy load components for better performance
+const RequestsList = lazy(() => import('./learner.requests/RequestsList'));
+const EmptyState = lazy(() => import('./learner.requests/EmptyState'));
 
 // Performance optimized animations
 const rotateGlobe = keyframes`
@@ -27,7 +29,64 @@ const rotateGlobe = keyframes`
   to { transform: rotate(360deg); }
 `;
 
-// Styled components
+// Styled components with performance optimizations
+const PageContainer = styled(Container)`
+  min-height: 100vh;
+  padding: 0;
+  margin: 0;
+  max-width: 100%;
+  background-color: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+`;
+
+const ContentWrapper = styled.div`
+  flex: 1;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: clamp(1rem, 3vw, 3rem);
+  transition: all 0.3s ease;
+  
+  @media (min-width: ${breakpoints.md}px) {
+    max-width: 1400px;
+  }
+  
+  @media (min-width: ${breakpoints.lg}px) {
+    max-width: 1600px;
+  }
+`;
+
+const HeaderSection = styled.section`
+  background: linear-gradient(135deg, #0b1437 0%, #1e3a8a 100%);
+  color: #fff;
+  border-radius: clamp(0.75rem, 2vw, 1rem);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  position: relative;
+  margin-bottom: clamp(1rem, 3vw, 1.5rem);
+`;
+
+const HeaderContent = styled.div`
+  padding: ${props => props.$isMobile ? '1rem' : '1.5rem'};
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  
+  @media (min-width: ${breakpoints.md}px) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+`;
+
+const TitleSection = styled.div`
+  display: flex;
+  align-items: center;
+  gap: clamp(0.5rem, 2vw, 1rem);
+  min-width: 0;
+`;
+
 const RevolvingGlobe = styled.div`
   flex-shrink: 0;
   display: flex;
@@ -48,48 +107,13 @@ const RevolvingGlobe = styled.div`
   }
 `;
 
-const HeaderSection = styled.section`
-  background: linear-gradient(135deg, #0b1437 0%, #1e3a8a 100%);
-  color: #fff;
-  border-radius: 1rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  overflow: hidden;
-  position: relative;
-  margin-bottom: 1.5rem;
-  
-  @media (max-width: ${breakpoints.sm}px) {
-    border-radius: 0.75rem;
-    margin-bottom: 1rem;
-  }
-`;
-
-const HeaderContent = styled.div`
-  padding: ${props => props.$isMobile ? '1rem' : '1.5rem'};
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  
-  @media (min-width: ${breakpoints.md}px) {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-  }
-`;
-
-const TitleSection = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  min-width: 0;
-`;
-
 const EnhancedTitle = styled.div`
   min-width: 0;
   
   h2 {
     font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-weight: 800;
-    font-size: ${props => props.$isMobile ? '1.5rem' : '2rem'};
+    font-size: clamp(1.2rem, 4vw, 2rem);
     margin: 0;
     letter-spacing: -0.5px;
     white-space: nowrap;
@@ -98,7 +122,7 @@ const EnhancedTitle = styled.div`
   }
   
   p {
-    font-size: ${props => props.$isMobile ? '0.875rem' : '1rem'};
+    font-size: clamp(0.875rem, 2vw, 1rem);
     margin: 0.25rem 0 0;
     opacity: 0.8;
   }
@@ -123,10 +147,12 @@ const ActionButton = styled(Button)`
   align-items: center;
   gap: 0.5rem;
   border: none;
-  transition: transform 0.2s ease;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   
   &:hover {
     transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
   }
   
   svg {
@@ -146,12 +172,8 @@ const ActionButton = styled(Button)`
 const StatsSection = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  padding: 0 1.5rem 1.5rem;
-  
-  @media (max-width: ${breakpoints.sm}px) {
-    padding: 0 1rem 1rem;
-  }
+  gap: clamp(0.5rem, 2vw, 1rem);
+  padding: 0 clamp(1rem, 3vw, 1.5rem) clamp(1rem, 3vw, 1.5rem);
 `;
 
 const StatBadge = styled.div`
@@ -163,6 +185,7 @@ const StatBadge = styled.div`
   gap: 0.5rem;
   font-weight: 600;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(4px);
   
   svg {
     width: 16px;
@@ -170,7 +193,7 @@ const StatBadge = styled.div`
   }
 `;
 
-// Memoized loading state for performance
+// Memoized loading state for better performance
 const LoadingState = memo(() => (
   <div className="text-center py-5 w-100">
     <div className="d-inline-block mb-3 position-relative" style={{ width: 64, height: 64 }}>
@@ -182,33 +205,6 @@ const LoadingState = memo(() => (
   </div>
 ));
 
-// Add these styled components at the top with other styled components
-const PageContainer = styled(Container)`
-  min-height: 100vh;
-  padding: 0;
-  margin: 0;
-  max-width: 100%;
-  background-color: #f8f9fa;
-  display: flex;
-  flex-direction: column;
-`;
-
-const ContentWrapper = styled.div`
-  flex: 1;
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 1rem;
-  
-  @media (min-width: ${breakpoints.sm}px) {
-    padding: 1.5rem;
-  }
-  
-  @media (min-width: ${breakpoints.md}px) {
-    padding: 2rem;
-  }
-`;
-
 const LearnerRequests = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -219,7 +215,7 @@ const LearnerRequests = () => {
   const navigate = useNavigate();
   const { isMobile } = useResponsive();
 
-  // Fetch requests
+  // Memoized fetch requests function
   const fetchRequests = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -234,7 +230,7 @@ const LearnerRequests = () => {
     }
   }, [user]);
 
-  // Logout handler
+  // Memoized logout handler
   const handleLogout = useCallback(() => {
     if (typeof logout === 'function') {
       logout();
@@ -244,7 +240,7 @@ const LearnerRequests = () => {
     }
   }, [logout, navigate]);
 
-  // Status update handler
+  // Memoized status update handler
   const handleStatusUpdate = useCallback(async (requestId, newStatus, reason = null) => {
     setProcessingIds(prev => [...prev, requestId]);
     try {
@@ -273,12 +269,14 @@ const LearnerRequests = () => {
     return () => clearInterval(intervalId);
   }, [fetchRequests, user]);
 
-  // Dismiss error
+  // Memoized dismiss error handler
   const dismissError = useCallback(() => setError(''), []);
 
-  // Responsive stats
-  const inProgressCount = requests.filter(r => r.status === 'pending' || r.status === 'approved').length;
-  const completedCount = requests.filter(r => r.status === 'completed').length;
+  // Memoized stats calculation
+  const stats = React.useMemo(() => ({
+    inProgress: requests.filter(r => r.status === 'pending' || r.status === 'approved').length,
+    completed: requests.filter(r => r.status === 'completed').length
+  }), [requests]);
 
   return (
     <PageContainer fluid>
@@ -324,11 +322,11 @@ const LearnerRequests = () => {
           <StatsSection>
             <StatBadge>
               <Clock className="text-warning" />
-              <span>In Progress: {inProgressCount}</span>
+              <span>In Progress: {stats.inProgress}</span>
             </StatBadge>
             <StatBadge>
               <CheckCircleFill className="text-success" />
-              <span>Completed: {completedCount}</span>
+              <span>Completed: {stats.completed}</span>
             </StatBadge>
           </StatsSection>
         </HeaderSection>
@@ -428,4 +426,4 @@ const LearnerRequests = () => {
   );
 };
 
-export default LearnerRequests;
+export default memo(LearnerRequests);

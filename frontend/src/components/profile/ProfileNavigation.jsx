@@ -43,7 +43,7 @@ const NavLink = styled(Nav.Link)`
   }
 
   &.active {
-    background: #3b82f6;
+    background: #2563eb;
     color: white;
     
     ${props => props.$isMobile && `
@@ -53,7 +53,7 @@ const NavLink = styled(Nav.Link)`
         right: 0;
         top: 50%;
         transform: translateY(-50%);
-        border-left: 8px solid #2563eb;
+        border-left: 8px solid #1d4ed8;
         border-top: 8px solid transparent;
         border-bottom: 8px solid transparent;
       }

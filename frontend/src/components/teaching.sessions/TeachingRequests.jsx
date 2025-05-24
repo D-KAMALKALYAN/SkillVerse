@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback, memo } from 'react';
 import { Container, Row, Col, Card, Button, Badge } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -7,7 +7,7 @@ import {
   HouseFill, BoxArrowRight, Clock, CheckCircleFill,
   Lightning, Bell, CalendarCheck, GearFill, Globe
 } from 'react-bootstrap-icons';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import useResponsive from '../../hooks/useResponsive';
 import { breakpoints } from '../../styles/breakpoints';
 
@@ -32,7 +32,7 @@ const rotateGlobe = keyframes`
   to { transform: rotate(360deg); }
 `;
 
-// Styled components
+// Styled components with performance optimizations
 const PageContainer = styled(Container)`
   min-height: 100vh;
   padding: 0;
@@ -48,30 +48,31 @@ const ContentWrapper = styled.div`
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 1rem;
-  
-  @media (min-width: ${breakpoints.sm}px) {
-    padding: 1.5rem;
-  }
+  padding: clamp(1rem, 3vw, 3rem);
+  transition: all 0.3s ease;
   
   @media (min-width: ${breakpoints.md}px) {
-    padding: 2rem;
+    max-width: 1400px;
+  }
+  
+  @media (min-width: ${breakpoints.lg}px) {
+    max-width: 1600px;
+  }
+  
+  @media (min-width: ${breakpoints.xl}px) {
+    max-width: 1800px;
   }
 `;
 
 const HeaderSection = styled.section`
-  background: linear-gradient(135deg, #0b1437 0%, #1e3a8a 100%);
-  color: #fff;
-  border-radius: 1rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  color: #2c3e50;
+  border-radius: clamp(0.75rem, 2vw, 1rem);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   overflow: hidden;
   position: relative;
-  margin-bottom: 1.5rem;
-  
-  @media (max-width: ${breakpoints.sm}px) {
-    border-radius: 0.75rem;
-    margin-bottom: 1rem;
-  }
+  margin-bottom: clamp(1rem, 3vw, 1.5rem);
 `;
 
 const HeaderContent = styled.div`
@@ -90,7 +91,7 @@ const HeaderContent = styled.div`
 const TitleSection = styled.div`
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: clamp(0.5rem, 2vw, 1rem);
   min-width: 0;
 `;
 
@@ -99,7 +100,7 @@ const RevolvingGlobe = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+  background: linear-gradient(135deg, #3b82f6, #1e40af);
   border-radius: 50%;
   padding: ${props => props.$isMobile ? '8px' : '10px'};
   width: ${props => props.$isMobile ? '32px' : '42px'};
@@ -119,19 +120,20 @@ const EnhancedTitle = styled.div`
   
   h2 {
     font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    font-weight: 800;
-    font-size: ${props => props.$isMobile ? '1.5rem' : '2rem'};
+    font-weight: 700;
+    font-size: clamp(1.2rem, 4vw, 2rem);
     margin: 0;
     letter-spacing: -0.5px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    color: #2c3e50;
   }
   
   p {
-    font-size: ${props => props.$isMobile ? '0.875rem' : '1rem'};
+    font-size: clamp(0.875rem, 2vw, 1rem);
     margin: 0.25rem 0 0;
-    opacity: 0.8;
+    color: #6c757d;
   }
 `;
 
@@ -147,17 +149,22 @@ const ActionButtons = styled.div`
 `;
 
 const ActionButton = styled(Button)`
-  border-radius: 999px;
+  border-radius: 8px;
   padding: 0.5rem 1rem;
-  font-weight: 600;
+  font-weight: 500;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  border: none;
-  transition: transform 0.2s ease;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: white;
+  color: #2c3e50;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   
   &:hover {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+    background: #f8f9fa;
   }
   
   svg {
@@ -177,26 +184,95 @@ const ActionButton = styled(Button)`
 const StatsSection = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  padding: 0 1.5rem 1.5rem;
-  
-  @media (max-width: ${breakpoints.sm}px) {
-    padding: 0 1rem 1rem;
-  }
+  gap: clamp(0.5rem, 2vw, 1rem);
+  padding: 0 clamp(1rem, 3vw, 1.5rem) clamp(1rem, 3vw, 1.5rem);
 `;
 
 const StatCard = styled(Card)`
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border: none;
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 1rem;
   overflow: hidden;
   transition: transform 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  will-change: transform;
   
   &:hover {
     transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
   }
 `;
+
+// Memoized components for better performance
+const StatIcon = memo(({ icon: Icon, gradient, size = 24 }) => (
+  <div className="rounded-circle d-flex align-items-center justify-content-center me-3" 
+    style={{ 
+      width: '48px', 
+      height: '48px', 
+      background: gradient,
+      boxShadow: `0 4px 6px -1px ${gradient.split(',')[0].replace('linear-gradient(135deg, ', '').replace(')', '')}33`
+    }}>
+    <Icon size={size} className="text-white" />
+  </div>
+));
+
+const QuickTipCard = memo(() => (
+  <Card className="border-0 shadow-sm rounded-4 py-2 px-3" style={{ background: '#f0f9ff' }}>
+    <div className="d-flex align-items-center">
+      <div className="me-3 rounded-circle d-flex align-items-center justify-content-center" 
+        style={{ 
+          width: '36px', 
+          height: '36px', 
+          background: 'linear-gradient(135deg, #0ea5e9, #0284c7)',
+          color: 'white'
+        }}>
+        <Lightning size={18} />
+      </div>
+      <div>
+        <p className="small mb-0 fw-semibold" style={{ color: '#0c4a6e' }}>
+          Quick Tip: Responding within 24 hours increases your teacher rating!
+        </p>
+      </div>
+    </div>
+  </Card>
+));
+
+const EmptyState = memo(({ navigate }) => (
+  <div className="text-center py-5">
+    <div className="rounded-circle mx-auto mb-4 d-flex align-items-center justify-content-center" 
+      style={{ 
+        width: '100px', 
+        height: '100px', 
+        background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(30, 64, 175, 0.1))',
+        border: '2px dashed #3b82f6',
+      }}>
+      <MortarboardFill size={40} className="text-primary" />
+    </div>
+    <h3 className="fw-bold mb-3">No Teaching Requests Yet</h3>
+    <p className="text-muted mb-4 mx-auto" style={{ maxWidth: '500px' }}>
+      Students haven't requested your teaching expertise yet. Enhance your profile to attract more learners!
+    </p>
+    <Button 
+      variant="primary" 
+      onClick={() => navigate('/profile')} 
+      className="rounded-pill py-2 px-4 me-3 mb-2 mb-sm-0"
+      style={{ 
+        background: 'linear-gradient(to right, #3b82f6, #1e40af)',
+        border: 'none',
+        boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.3)'
+      }}>
+      <GearFill className="me-2" />
+      Update Teaching Profile
+    </Button>
+    <Button 
+      variant="outline-primary" 
+      onClick={() => navigate('/dashboard')} 
+      className="rounded-pill py-2 px-4">
+      <HouseFill className="me-2" />
+      Return to Dashboard
+    </Button>
+  </div>
+));
 
 const TeachingRequests = () => {
   const navigate = useNavigate();
@@ -233,7 +309,7 @@ const TeachingRequests = () => {
     handleTimeSlotSelect
   } = useModalState();
 
-  // Calculate statistics
+  // Calculate statistics with useMemo
   const stats = useMemo(() => {
     if (!requests) return { pending: 0, scheduled: 0, completed: 0 };
     
@@ -245,14 +321,8 @@ const TeachingRequests = () => {
     }, { pending: 0, scheduled: 0, completed: 0 });
   }, [requests]);
 
-  // Format the current date
-  const formattedDate = useMemo(() => 
-    new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
-    []
-  );
-  
-  // Modal submit handlers
-  const handleRescheduleSubmit = async () => {
+  // Memoized handlers
+  const handleRescheduleSubmit = useCallback(async () => {
     if (!selectedRequest) return;
     
     const success = await handleReschedule(
@@ -264,9 +334,9 @@ const TeachingRequests = () => {
     if (success) {
       toggleModal('reschedule', false);
     }
-  };
+  }, [selectedRequest, proposedDateTime, proposedEndTime, handleReschedule, toggleModal]);
   
-  const handleRejectSubmit = async () => {
+  const handleRejectSubmit = useCallback(async () => {
     if (!selectedRequest) return;
     
     const success = await handleReject(selectedRequest, rejectionReason);
@@ -274,9 +344,9 @@ const TeachingRequests = () => {
     if (success) {
       toggleModal('reject', false);
     }
-  };
+  }, [selectedRequest, rejectionReason, handleReject, toggleModal]);
   
-  const handleSessionCreationSubmit = async () => {
+  const handleSessionCreationSubmit = useCallback(async () => {
     if (!selectedRequest) return;
     
     const success = await handleCreateSession(selectedRequest, sessionDetails);
@@ -284,9 +354,9 @@ const TeachingRequests = () => {
     if (success) {
       toggleModal('sessionCreation', false);
     }
-  };
+  }, [selectedRequest, sessionDetails, handleCreateSession, toggleModal]);
   
-  const handleCompleteSessionSubmit = async () => {
+  const handleCompleteSessionSubmit = useCallback(async () => {
     if (!selectedRequest) return;
     
     const success = await handleCompleteSession(selectedRequest.sessionId, feedbackText);
@@ -295,15 +365,15 @@ const TeachingRequests = () => {
       toggleModal('completeSession', false);
       setFeedbackText('');
     }
-  };
+  }, [selectedRequest, feedbackText, handleCompleteSession, toggleModal, setFeedbackText]);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     logout();
     navigate('/login');
-  };
+  }, [logout, navigate]);
   
-  // Render teaching requests list
-  const renderRequests = () => {
+  // Memoized render functions
+  const renderRequests = useCallback(() => {
     if (loading) {
       return <LoadingSpinner text="Loading teaching requests..." />;
     }
@@ -318,42 +388,7 @@ const TeachingRequests = () => {
     }
     
     if (!requests || requests.length === 0) {
-      return (
-        <div className="text-center py-5">
-          <div className="rounded-circle mx-auto mb-4 d-flex align-items-center justify-content-center" 
-            style={{ 
-              width: '100px', 
-              height: '100px', 
-              background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(30, 64, 175, 0.1))',
-              border: '2px dashed #3b82f6',
-            }}>
-            <MortarboardFill size={40} className="text-primary" />
-          </div>
-          <h3 className="fw-bold mb-3">No Teaching Requests Yet</h3>
-          <p className="text-muted mb-4 mx-auto" style={{ maxWidth: '500px' }}>
-            Students haven't requested your teaching expertise yet. Enhance your profile to attract more learners!
-          </p>
-          <Button 
-            variant="primary" 
-            onClick={() => navigate('/profile')} 
-            className="rounded-pill py-2 px-4 me-3 mb-2 mb-sm-0"
-            style={{ 
-              background: 'linear-gradient(to right, #3b82f6, #1e40af)',
-              border: 'none',
-              boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.3)'
-            }}>
-            <GearFill className="me-2" />
-            Update Teaching Profile
-          </Button>
-          <Button 
-            variant="outline-primary" 
-            onClick={() => navigate('/dashboard')} 
-            className="rounded-pill py-2 px-4">
-            <HouseFill className="me-2" />
-            Return to Dashboard
-          </Button>
-        </div>
-      );
+      return <EmptyState navigate={navigate} />;
     }
     
     return (
@@ -370,7 +405,7 @@ const TeachingRequests = () => {
         ))}
       </Row>
     );
-  };
+  }, [loading, error, requests, processing, toggleModal, navigate, setError]);
   
   return (
     <PageContainer fluid>
@@ -391,21 +426,21 @@ const TeachingRequests = () => {
             <ActionButtons>
               <ActionButton
                 onClick={() => navigate('/dashboard')}
-                style={{ background: 'linear-gradient(90deg, #8b5cf6, #6d28d9)' }}
+                style={{ background: 'white', color: '#2c3e50' }}
               >
                 <HouseFill />
                 <span>Dashboard</span>
               </ActionButton>
               <ActionButton
                 onClick={() => navigate('/match/learning-requests')}
-                style={{ background: 'linear-gradient(90deg, #3b82f6, #1e40af)' }}
+                style={{ background: 'white', color: '#2c3e50' }}
               >
                 <BookFill />
                 <span>My Learning</span>
               </ActionButton>
               <ActionButton
                 onClick={handleLogout}
-                style={{ background: 'linear-gradient(90deg, #ef4444, #b91c1c)' }}
+                style={{ background: 'white', color: '#2c3e50' }}
               >
                 <BoxArrowRight />
                 <span>Logout</span>
@@ -419,19 +454,14 @@ const TeachingRequests = () => {
                 <StatCard>
                   <Card.Body className="p-3">
                     <div className="d-flex">
-                      <div className="rounded-circle d-flex align-items-center justify-content-center me-3" 
-                        style={{ 
-                          width: '48px', 
-                          height: '48px', 
-                          background: 'linear-gradient(135deg, #3b82f6, #1e40af)',
-                          boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.3)'
-                        }}>
-                        <Bell size={24} className="text-white" />
-                      </div>
+                      <StatIcon 
+                        icon={Bell} 
+                        gradient="linear-gradient(135deg, #3b82f6, #1e40af)"
+                      />
                       <div>
-                        <h6 className="text-uppercase text-white-50 mb-1 small">Pending Requests</h6>
+                        <h6 className="text-uppercase text-muted mb-1 small">Pending Requests</h6>
                         <div className="d-flex align-items-center">
-                          <h2 className="fw-bold mb-0 text-white">{stats.pending}</h2>
+                          <h2 className="fw-bold mb-0 text-primary">{stats.pending}</h2>
                           <Badge className="ms-2" bg="primary" pill>Waiting</Badge>
                         </div>
                       </div>
@@ -443,19 +473,14 @@ const TeachingRequests = () => {
                 <StatCard>
                   <Card.Body className="p-3">
                     <div className="d-flex">
-                      <div className="rounded-circle d-flex align-items-center justify-content-center me-3" 
-                        style={{ 
-                          width: '48px', 
-                          height: '48px', 
-                          background: 'linear-gradient(135deg, #10b981, #047857)',
-                          boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.3)'
-                        }}>
-                        <CalendarCheck size={24} className="text-white" />
-                      </div>
+                      <StatIcon 
+                        icon={CalendarCheck} 
+                        gradient="linear-gradient(135deg, #10b981, #047857)"
+                      />
                       <div>
-                        <h6 className="text-uppercase text-white-50 mb-1 small">Scheduled Sessions</h6>
+                        <h6 className="text-uppercase text-muted mb-1 small">Scheduled Sessions</h6>
                         <div className="d-flex align-items-center">
-                          <h2 className="fw-bold mb-0 text-white">{stats.scheduled}</h2>
+                          <h2 className="fw-bold mb-0 text-success">{stats.scheduled}</h2>
                           <Badge className="ms-2" bg="success" pill>Upcoming</Badge>
                         </div>
                       </div>
@@ -467,19 +492,14 @@ const TeachingRequests = () => {
                 <StatCard>
                   <Card.Body className="p-3">
                     <div className="d-flex">
-                      <div className="rounded-circle d-flex align-items-center justify-content-center me-3" 
-                        style={{ 
-                          width: '48px', 
-                          height: '48px', 
-                          background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
-                          boxShadow: '0 4px 6px -1px rgba(139, 92, 246, 0.3)'
-                        }}>
-                        <CheckCircleFill size={24} className="text-white" />
-                      </div>
+                      <StatIcon 
+                        icon={CheckCircleFill} 
+                        gradient="linear-gradient(135deg, #8b5cf6, #6d28d9)"
+                      />
                       <div>
-                        <h6 className="text-uppercase text-white-50 mb-1 small">Completed Sessions</h6>
+                        <h6 className="text-uppercase text-muted mb-1 small">Completed Sessions</h6>
                         <div className="d-flex align-items-center">
-                          <h2 className="fw-bold mb-0 text-white">{stats.completed}</h2>
+                          <h2 className="fw-bold mb-0 text-secondary">{stats.completed}</h2>
                           <Badge className="ms-2" bg="secondary" pill>Finished</Badge>
                         </div>
                       </div>
@@ -492,7 +512,7 @@ const TeachingRequests = () => {
         </HeaderSection>
 
         {/* Main Content */}
-        <Card className="border-0 rounded-4 shadow-lg overflow-hidden mb-4 w-100">
+        <Card className="border-0 rounded-4 shadow-sm overflow-hidden mb-4 w-100">
           <Card.Body className="p-4">
             <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap">
               <div className="mb-3 mb-md-0">
@@ -500,24 +520,7 @@ const TeachingRequests = () => {
                 <p className="text-muted">View and respond to your teaching requests</p>
               </div>
               <div className="d-flex gap-2">
-                <Card className="border-0 shadow-sm rounded-4 py-2 px-3" style={{ background: '#f0f9ff' }}>
-                  <div className="d-flex align-items-center">
-                    <div className="me-3 rounded-circle d-flex align-items-center justify-content-center" 
-                      style={{ 
-                        width: '36px', 
-                        height: '36px', 
-                        background: 'linear-gradient(135deg, #0ea5e9, #0284c7)',
-                        color: 'white'
-                      }}>
-                      <Lightning size={18} />
-                    </div>
-                    <div>
-                      <p className="small mb-0 fw-semibold" style={{ color: '#0c4a6e' }}>
-                        Quick Tip: Responding within 24 hours increases your teacher rating!
-                      </p>
-                    </div>
-                  </div>
-                </Card>
+                <QuickTipCard />
               </div>
             </div>
             
@@ -583,16 +586,17 @@ const TeachingRequests = () => {
         }
         
         .form-control::placeholder {
-          color: rgba(255, 255, 255, 0.6);
+          color: rgba(0, 0, 0, 0.4);
         }
         
         .card {
           transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+          will-change: transform;
         }
         
         .card:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05) !important;
         }
         `}
       </style>
@@ -600,4 +604,4 @@ const TeachingRequests = () => {
   );
 };
 
-export default TeachingRequests;
+export default memo(TeachingRequests);
