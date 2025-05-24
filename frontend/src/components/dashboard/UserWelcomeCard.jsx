@@ -104,34 +104,7 @@ const UserWelcomeCard = ({
           throw new Error('Failed to fetch leaderboard data');
         }
         
-    //     // Fetch user's rank if user is logged in
-    //     if (user && user._id) {
-    //       const userRankResponse = await axios.get('/api/points/user-rank', {
-    //         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    //       });
-          
-    //       if (userRankResponse.data.success) {
-    //         setUserRank(userRankResponse.data.rank);
-    //       } else {
-    //         // If we can't fetch the rank, we can search for the user in the full leaderboard
-    //         const allLeaderboardResponse = await axios.get('/api/points/leaderboard?limit=0');
-    //         if (allLeaderboardResponse.data.success) {
-    //           const allUsers = allLeaderboardResponse.data.leaderboard;
-    //           const userIndex = allUsers.findIndex(entry => entry.userId === user._id);
-    //           if (userIndex !== -1) {
-    //             setUserRank(userIndex + 1);
-    //           }
-    //         }
-    //       }
-    //     }
-    //   } catch (error) {
-    //     console.error('Error fetching leaderboard data:', error);
-    //     setLeaderboardError('Failed to load leaderboard data');
-    //   } finally {
-    //     setIsLoadingLeaderboard(false);
-    //   }
-    // };
-
+    
           // Fetch user's rank if user is logged in
         if (user && user._id) {
           // Use apiConfig client if available
@@ -207,7 +180,7 @@ const UserWelcomeCard = ({
       {/* Hero Section - Futuristic */}
       <div className="position-relative" style={{ 
         background: 'linear-gradient(135deg, #0b1437 0%, #1a237e 100%)',
-        padding: '2rem',
+        padding: '1.5rem',
         color: 'white',
         overflow: 'hidden'
       }}>
@@ -240,17 +213,17 @@ const UserWelcomeCard = ({
         
         <Row className="align-items-center mb-4 position-relative">
           <Col>
-            <h2 className="mb-1" style={{ fontWeight: '800', letterSpacing: '-0.5px' }}>
+            <h2 className="mb-1" style={{ fontWeight: '800', letterSpacing: '-0.5px', fontSize: '1.5rem' }}>
               Welcome back, <span className="text-primary">{user?.name}</span>
             </h2>
             <p className="text-white-50 mb-0">Your learning metrics dashboard</p>
           </Col>
         </Row>
         
-        <div className="d-flex flex-wrap gap-3 mt-3">
+        <div className="d-flex flex-wrap gap-2 mt-3">
           <div className="backdrop-blur-sm bg-white bg-opacity-10 rounded-pill px-3 py-2 shadow-sm">
             <CheckCircleFill className="me-2 text-success" /> 
-            <span className="fw-semibold">{stats.sessionsCompleted} Sessions Completed</span>
+            <span className="fw-semibold">{stats.sessionsCompleted} Sessions</span>
           </div>
           <div className="backdrop-blur-sm bg-white bg-opacity-10 rounded-pill px-3 py-2 shadow-sm">
             <Clock className="me-2 text-warning" /> 
@@ -260,24 +233,24 @@ const UserWelcomeCard = ({
       </div>
       
       <Card.Body className="p-0 bg-white">
-        {/* Main Content - 3 Columns */}
+        {/* Main Content - Responsive Columns */}
         <Row className="g-0">
           {/* Column 1: User Stats */}
           <Col md={4} className="border-end" style={{ background: '#f8fafc' }}>
-            <div className="p-4 h-100 d-flex flex-column">
+            <div className="p-3 p-md-4 h-100 d-flex flex-column">
               <div className="text-center mb-4">
                 <div className="position-relative d-inline-block">
                   {/* Points Circle - Futuristic */}
                   <div className="mb-3 mx-auto" style={{ filter: 'drop-shadow(0 10px 15px rgba(59, 130, 246, 0.3))' }}>
                     <div className="rounded-circle d-flex align-items-center justify-content-center border-0" 
                         style={{ 
-                          width: '110px', 
-                          height: '110px', 
+                          width: '90px', 
+                          height: '90px', 
                           background: levelGradient,
                           boxShadow: '0 0 0 5px rgba(255, 255, 255, 0.8), 0 0 0 10px rgba(59, 130, 246, 0.1)'
                         }}>
                       <div className="text-center">
-                        <h2 className="mb-0 fw-bold text-white" style={{ fontSize: '2.5rem' }}>{stats.points}</h2>
+                        <h2 className="mb-0 fw-bold text-white" style={{ fontSize: '2rem' }}>{stats.points}</h2>
                         <div className="text-white-50 small">POINTS</div>
                       </div>
                     </div>
@@ -285,13 +258,13 @@ const UserWelcomeCard = ({
                   {/* Status Badge */}
                   <div className="position-absolute top-0 end-0 translate-middle">
                     <div className="bg-success rounded-circle p-1 shadow-lg" style={{ border: '2px solid white' }}>
-                      <CheckCircleFill className="text-white" size={22} />
+                      <CheckCircleFill className="text-white" size={18} />
                     </div>
                   </div>
                 </div>
-                <h4 className="fw-bold mb-1" style={{ color: '#1e40af' }}>Skill Mastery</h4>
+                <h4 className="fw-bold mb-1" style={{ color: '#1e40af', fontSize: '1.1rem' }}>Skill Mastery</h4>
                 <div className="d-flex align-items-center justify-content-center gap-2 mb-1">
-                  <p className="text-muted mb-0">Level <span className="fw-bold text-primary">{userLevel}</span></p>
+                  <p className="text-muted mb-0 small">Level <span className="fw-bold text-primary">{userLevel}</span></p>
                   <span className="badge" style={{ background: 'linear-gradient(to right, #3b82f6, #1e40af)', color: 'white' }}>
                     +{stats.points % 100} XP
                   </span>
@@ -300,11 +273,11 @@ const UserWelcomeCard = ({
               
               <div className="mb-4">
                 <h6 className="text-uppercase fw-semibold small mb-3" style={{ color: '#64748b', letterSpacing: '1px' }}>Quick Actions</h6>
-                <div className="d-grid gap-3">
+                <div className="d-grid gap-2">
                   {/* Find Learning Matches Button - Futuristic */}
                   <Button 
                     variant="primary" 
-                    className="rounded-pill py-3 d-flex align-items-center justify-content-center position-relative" 
+                    className="rounded-pill py-2 d-flex align-items-center justify-content-center position-relative" 
                     onClick={handleFindLearningMatches} 
                     disabled={isGeneratingMatches}
                     style={{ 
@@ -320,9 +293,9 @@ const UserWelcomeCard = ({
                         <PeopleFill />
                       )}
                     </div>
-                    <span className="fw-semibold">{isGeneratingMatches ? 'Finding Matches...' : 'Discover Study Partners'}</span>
-                    <div className="position-absolute top-0 end-0 bottom-0 p-3 d-flex align-items-center">
-                      <ChevronRight />
+                    <span className="fw-semibold small">{isGeneratingMatches ? 'Finding Matches...' : 'Find Study Partners'}</span>
+                    <div className="position-absolute top-0 end-0 bottom-0 p-2 d-flex align-items-center">
+                      <ChevronRight size={16} />
                     </div>
                   </Button>
                   
@@ -331,7 +304,7 @@ const UserWelcomeCard = ({
                     <Dropdown.Toggle 
                       variant="success" 
                       id="dropdown-requests" 
-                      className="rounded-pill py-3 d-flex align-items-center justify-content-center w-100 text-start"
+                      className="rounded-pill py-2 d-flex align-items-center justify-content-center w-100 text-start"
                       style={{ 
                         background: 'linear-gradient(to right, #10b981, #047857)',
                         border: 'none',
@@ -339,11 +312,11 @@ const UserWelcomeCard = ({
                       }}
                     >
                       <div className="me-2">
-                        <Award />
+                        <Award size={16} />
                       </div>
-                      <span className="fw-semibold">Manage Sessions</span>
+                      <span className="fw-semibold small">Manage Sessions</span>
                       <div className="ms-auto">
-                        <ChevronDown />
+                        <ChevronDown size={16} />
                       </div>
                     </Dropdown.Toggle>
 
@@ -353,38 +326,38 @@ const UserWelcomeCard = ({
                     }}>
                       <Dropdown.Item 
                         onClick={() => navigate('/match/teaching-requests')} 
-                        className="d-flex align-items-center py-3"
+                        className="d-flex align-items-center py-2"
                       >
-                        <div className="me-3 rounded-circle d-flex align-items-center justify-content-center" 
+                        <div className="me-2 rounded-circle d-flex align-items-center justify-content-center" 
                           style={{ 
-                            width: '40px', 
-                            height: '40px',
+                            width: '32px', 
+                            height: '32px',
                             background: 'linear-gradient(135deg, #3b82f6, #1e40af)',
                             color: 'white'
                           }}>
-                          <MortarboardFill size={18} />
+                          <MortarboardFill size={16} />
                         </div>
                         <div>
-                          <div className="fw-semibold">Teaching Sessions</div>
+                          <div className="fw-semibold small">Teaching Sessions</div>
                           <div className="text-muted small">Share your knowledge</div>
                         </div>
                       </Dropdown.Item>
                       <Dropdown.Divider />
                       <Dropdown.Item 
                         onClick={() => navigate('/match/learning-requests')} 
-                        className="d-flex align-items-center py-3"
+                        className="d-flex align-items-center py-2"
                       >
-                        <div className="me-3 rounded-circle d-flex align-items-center justify-content-center" 
+                        <div className="me-2 rounded-circle d-flex align-items-center justify-content-center" 
                           style={{ 
-                            width: '40px', 
-                            height: '40px',
+                            width: '32px', 
+                            height: '32px',
                             background: 'linear-gradient(135deg, #06b6d4, #0891b2)',
                             color: 'white'
                           }}>
-                          <BookFill size={18} />
+                          <BookFill size={16} />
                         </div>
                         <div>
-                          <div className="fw-semibold">Learning Sessions</div>
+                          <div className="fw-semibold small">Learning Sessions</div>
                           <div className="text-muted small">Improve your skills</div>
                         </div>
                       </Dropdown.Item>
@@ -397,20 +370,20 @@ const UserWelcomeCard = ({
           
           {/* Column 2: Skill Distribution - Neo Futuristic Design */}
           <Col md={4} className="border-end">
-            <div className="p-4 h-100 d-flex flex-column">
-              <div className="d-flex align-items-center justify-content-between mb-4">
+            <div className="p-3 p-md-4 h-100 d-flex flex-column">
+              <div className="d-flex align-items-center justify-content-between mb-3">
                 <div>
-                  <h5 className="fw-bold mb-0" style={{ color: '#0f172a' }}>Skill Distribution</h5>
+                  <h5 className="fw-bold mb-0" style={{ color: '#0f172a', fontSize: '1.1rem' }}>Skill Distribution</h5>
                   <p className="text-muted small mb-0">Teaching vs. Learning</p>
                 </div>
                 <Button 
                   variant="primary" 
-                  className="rounded-pill px-3 py-1 d-flex align-items-center"
+                  className="rounded-pill px-2 py-1 d-flex align-items-center"
                   onClick={() => navigate('/profile')}
                   style={{ borderWidth: '1.5px' }}
                 >
-                  <GearFill size={14} className="me-1" />
-                  <span>Edit</span>
+                  <GearFill size={12} className="me-1" />
+                  <span className="small">Edit</span>
                 </Button>
               </div>
               
@@ -418,30 +391,30 @@ const UserWelcomeCard = ({
                 {/* Teaching Skills - Futuristic */}
                 <div className="mb-4">
                   <div className="d-flex align-items-center mb-3">
-                    <div className="me-3">
+                    <div className="me-2">
                       <div className="rounded-circle d-flex align-items-center justify-content-center" 
                            style={{ 
-                             width: '48px', 
-                             height: '48px', 
+                             width: '40px', 
+                             height: '40px', 
                              background: 'linear-gradient(135deg, #3b82f6, #1e40af)',
                              boxShadow: '0 10px 15px -3px rgba(59, 130, 246, 0.3)'
                            }}>
-                        <MortarboardFill size={22} className="text-white" />
+                        <MortarboardFill size={18} className="text-white" />
                       </div>
                     </div>
                     <div className="flex-grow-1">
                       <div className="d-flex justify-content-between mb-1">
-                        <span className="fw-semibold" style={{ color: '#1e40af' }}>Teaching Skills</span>
-                        <span className="fw-bold" style={{ color: '#1e40af' }}>{teachingPercentage}%</span>
+                        <span className="fw-semibold small" style={{ color: '#1e40af' }}>Teaching Skills</span>
+                        <span className="fw-bold small" style={{ color: '#1e40af' }}>{teachingPercentage}%</span>
                       </div>
                       {/* Futuristic Progress Bar */}
-                      <div className="position-relative mb-1" style={{ height: '10px', background: '#e2e8f0', borderRadius: '5px', overflow: 'hidden' }}>
+                      <div className="position-relative mb-1" style={{ height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
                         <div 
                           style={{ 
                             width: `${teachingPercentage}%`, 
                             height: '100%', 
                             background: 'linear-gradient(to right, #3b82f6, #1e40af)',
-                            borderRadius: '5px',
+                            borderRadius: '4px',
                             position: 'relative',
                             transition: 'width 1s ease-in-out'
                           }} 
@@ -451,7 +424,7 @@ const UserWelcomeCard = ({
                             position: 'absolute', 
                             top: '0', 
                             right: '0', 
-                            width: '10px', 
+                            width: '8px', 
                             height: '100%', 
                             background: 'rgba(255, 255, 255, 0.8)',
                             filter: 'blur(3px)',
@@ -467,14 +440,15 @@ const UserWelcomeCard = ({
                   </div>
                   
                   {/* Skill Badges for Teaching */}
-                  <div className="d-flex flex-wrap gap-2 ms-5 ps-4">
+                  <div className="d-flex flex-wrap gap-2 ms-4 ps-3">
                     {Object.keys(user?.teachingSkills || {}).slice(0, 3).map((skill, index) => (
                       <span key={`teach-${index}`} className="badge rounded-pill" 
                         style={{ 
                           background: 'rgba(59, 130, 246, 0.1)', 
                           color: '#3b82f6',
                           border: '1px solid rgba(59, 130, 246, 0.2)',
-                          padding: '0.4rem 0.8rem'
+                          padding: '0.3rem 0.6rem',
+                          fontSize: '0.75rem'
                         }}>
                         {skill}
                       </span>
@@ -484,7 +458,8 @@ const UserWelcomeCard = ({
                         style={{ 
                           background: 'rgba(59, 130, 246, 0.05)', 
                           color: '#3b82f6',
-                          padding: '0.4rem 0.8rem'
+                          padding: '0.3rem 0.6rem',
+                          fontSize: '0.75rem'
                         }}>
                         +{Object.keys(user?.teachingSkills || {}).length - 3} more
                       </span>
@@ -495,30 +470,30 @@ const UserWelcomeCard = ({
                 {/* Learning Skills - Futuristic */}
                 <div className="mt-4">
                   <div className="d-flex align-items-center mb-3">
-                    <div className="me-3">
+                    <div className="me-2">
                       <div className="rounded-circle d-flex align-items-center justify-content-center" 
                            style={{ 
-                             width: '48px', 
-                             height: '48px', 
+                             width: '40px', 
+                             height: '40px', 
                              background: 'linear-gradient(135deg, #06b6d4, #0891b2)',
                              boxShadow: '0 10px 15px -3px rgba(6, 182, 212, 0.3)'
                            }}>
-                        <BookFill size={22} className="text-white" />
+                        <BookFill size={18} className="text-white" />
                       </div>
                     </div>
                     <div className="flex-grow-1">
                       <div className="d-flex justify-content-between mb-1">
-                        <span className="fw-semibold" style={{ color: '#0891b2' }}>Learning Skills</span>
-                        <span className="fw-bold" style={{ color: '#0891b2' }}>{learningPercentage}%</span>
+                        <span className="fw-semibold small" style={{ color: '#0891b2' }}>Learning Skills</span>
+                        <span className="fw-bold small" style={{ color: '#0891b2' }}>{learningPercentage}%</span>
                       </div>
                       {/* Futuristic Progress Bar */}
-                      <div className="position-relative mb-1" style={{ height: '10px', background: '#e2e8f0', borderRadius: '5px', overflow: 'hidden' }}>
+                      <div className="position-relative mb-1" style={{ height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
                         <div 
                           style={{ 
                             width: `${learningPercentage}%`, 
                             height: '100%', 
                             background: 'linear-gradient(to right, #06b6d4, #0891b2)',
-                            borderRadius: '5px',
+                            borderRadius: '4px',
                             position: 'relative',
                             transition: 'width 1s ease-in-out'
                           }} 
@@ -528,7 +503,7 @@ const UserWelcomeCard = ({
                             position: 'absolute', 
                             top: '0', 
                             right: '0', 
-                            width: '10px', 
+                            width: '8px', 
                             height: '100%', 
                             background: 'rgba(255, 255, 255, 0.8)',
                             filter: 'blur(3px)',
@@ -537,21 +512,22 @@ const UserWelcomeCard = ({
                         </div>
                       </div>
                       <div className="d-flex justify-content-between">
-                        <span className="text-muted small">  {requestCounts.learningRequestsCount} skills</span>
+                        <span className="text-muted small">{requestCounts.learningRequestsCount} skills</span>
                         <span className="small fw-semibold" style={{ color: '#06b6d4' }}>{learningStatus}</span>
                       </div>
                     </div>
                   </div>
                   
                   {/* Skill Badges for Learning */}
-                  <div className="d-flex flex-wrap gap-2 ms-5 ps-4">
+                  <div className="d-flex flex-wrap gap-2 ms-4 ps-3">
                     {Object.keys(user?.learningSkills || {}).slice(0, 3).map((skill, index) => (
                       <span key={`learn-${index}`} className="badge rounded-pill" 
                         style={{ 
                           background: 'rgba(6, 182, 212, 0.1)', 
                           color: '#0891b2',
                           border: '1px solid rgba(6, 182, 212, 0.2)',
-                          padding: '0.4rem 0.8rem'
+                          padding: '0.3rem 0.6rem',
+                          fontSize: '0.75rem'
                         }}>
                         {skill}
                       </span>
@@ -561,7 +537,8 @@ const UserWelcomeCard = ({
                         style={{ 
                           background: 'rgba(6, 182, 212, 0.05)', 
                           color: '#0891b2',
-                          padding: '0.4rem 0.8rem'
+                          padding: '0.3rem 0.6rem',
+                          fontSize: '0.75rem'
                         }}>
                         +{Object.keys(user?.learningSkills || {}).length - 3} more
                       </span>
@@ -578,30 +555,30 @@ const UserWelcomeCard = ({
                 }}>
                   <div className="position-absolute top-0 end-0 mt-2 me-2">
                     <div style={{ 
-                      width: '40px', 
-                      height: '40px', 
+                      width: '32px', 
+                      height: '32px', 
                       borderRadius: '50%',
                       background: 'radial-gradient(circle, rgba(14, 165, 233, 0.2) 0%, rgba(14, 165, 233, 0) 70%)'
                     }}></div>
                   </div>
-                  <Card.Body className="p-3">
+                  <Card.Body className="p-2">
                     <div className="d-flex align-items-center mb-2">
                       <div className="me-2 rounded-circle d-flex align-items-center justify-content-center" 
                         style={{ 
-                          width: '28px', 
-                          height: '28px', 
+                          width: '24px', 
+                          height: '24px', 
                           background: '#0ea5e9',
                           color: 'white'
                         }}>
-                        <Lightning size={14} />
+                        <Lightning size={12} />
                       </div>
                       <h6 className="text-uppercase fw-semibold small mb-0" style={{ color: '#0c4a6e' }}>Suggested Next Step</h6>
                     </div>
-                    <p className="small mb-3 text-muted">Complete your skill assessment to unlock more personalized matches.</p>
+                    <p className="small mb-2 text-muted">Complete your skill assessment to unlock more personalized matches.</p>
                     <Button 
                       variant="primary" 
                       size="sm" 
-                      className="rounded-pill px-3 d-flex align-items-center"
+                      className="rounded-pill px-2 d-flex align-items-center"
                       onClick={() => navigate('/assessments')}
                       style={{ 
                         background: 'linear-gradient(to right, #0ea5e9, #0284c7)',
@@ -609,8 +586,8 @@ const UserWelcomeCard = ({
                         boxShadow: '0 4px 6px -1px rgba(14, 165, 233, 0.2)'
                       }}
                     >
-                      <GraphUp size={14} className="me-2" />
-                      <span>Explore Assessments</span>
+                      <GraphUp size={12} className="me-1" />
+                      <span className="small">Explore Assessments</span>
                     </Button>
                   </Card.Body>
                 </Card>
@@ -622,176 +599,177 @@ const UserWelcomeCard = ({
           <Col md={4}>
             <div className="h-100 d-flex flex-column">
               {/* Leaderboard Header */}
-              <div className="p-3 d-flex align-items-center" style={{ 
+              <div className="p-2 d-flex align-items-center" style={{ 
                 background: 'linear-gradient(to right, #fef3c7, #fde68a)',
                 borderBottom: '1px solid rgba(217, 119, 6, 0.2)'
               }}>
                 <div className="me-2 rounded-circle d-flex align-items-center justify-content-center" 
                   style={{ 
-                    width: '32px', 
-                    height: '32px', 
+                    width: '28px', 
+                    height: '28px', 
                     background: '#fbbf24',
                     boxShadow: '0 4px 6px -1px rgba(251, 191, 36, 0.3)'
                   }}>
-                  <Award className="text-white" size={18} />
+                  <Award className="text-white" size={16} />
                 </div>
-                <h5 className="mb-0 fw-bold" style={{ color: '#92400e' }}>Top Contributors</h5>
-                <Badge className="ms-auto rounded-pill px-3 py-2" style={{ 
+                <h5 className="mb-0 fw-bold" style={{ color: '#92400e', fontSize: '1.1rem' }}>Top Contributors</h5>
+                <Badge className="ms-auto rounded-pill px-2 py-1" style={{ 
                   background: 'linear-gradient(to right, #fbbf24, #d97706)',
                   color: 'white',
-                  boxShadow: '0 2px 4px rgba(251, 191, 36, 0.3)'
+                  boxShadow: '0 2px 4px rgba(251, 191, 36, 0.3)',
+                  fontSize: '0.75rem'
                 }}>Weekly</Badge>
               </div>
               
               {/* Leaderboard Content - Futuristic */}
-              <div className="flex-grow-1 overflow-auto" style={{ maxHeight: '300px', scrollbarWidth: 'thin' }}>
+              <div className="flex-grow-1 overflow-auto" style={{ maxHeight: '250px', scrollbarWidth: 'thin' }}>
                 {isLoadingLeaderboard ? (
                   <div className="d-flex justify-content-center align-items-center h-100">
                     <div className="text-center">
                       <Spinner animation="border" role="status" variant="primary" style={{
-                        width: '3rem',
-                        height: '3rem',
+                        width: '2.5rem',
+                        height: '2.5rem',
                         borderWidth: '0.25rem'
                       }}>
                         <span className="visually-hidden">Loading...</span>
                       </Spinner>
-                      <p className="mt-2 text-muted">Loading top contributors...</p>
+                      <p className="mt-2 text-muted small">Loading top contributors...</p>
                     </div>
                   </div>
                 ) : leaderboardError ? (
-                  <div className="text-center p-4">
-                    <div className="rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center bg-danger bg-opacity-10" 
-                      style={{ width: '64px', height: '64px' }}>
+                  <div className="text-center p-3">
+                    <div className="rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center bg-danger bg-opacity-10" 
+                      style={{ width: '48px', height: '48px' }}>
                       <span className="text-danger fs-4">!</span>
                     </div>
-                    <p className="text-danger">{leaderboardError}</p>
+                    <p className="text-danger small">{leaderboardError}</p>
                     <Button 
                       variant="outline-primary" 
                       size="sm" 
-                      className="rounded-pill px-3"
+                      className="rounded-pill px-2"
                       onClick={() => window.location.reload()}
                     >
                       Retry
                     </Button>
                   </div>
                 ) : (
-                  <div className="p-3">
+                  <div className="p-2">
                     {leaderboardData.length === 0 ? (
-                      <div className="text-center p-4">
-                        <div className="rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center bg-primary bg-opacity-10" 
-                          style={{ width: '64px', height: '64px' }}>
-                          <Award className="text-primary" size={28} />
+                      <div className="text-center p-3">
+                        <div className="rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center bg-primary bg-opacity-10" 
+                          style={{ width: '48px', height: '48px' }}>
+                          <Award className="text-primary" size={24} />
                         </div>
-                        <p className="text-muted">No leaderboard data available yet.</p>
+                        <p className="text-muted small">No leaderboard data available yet.</p>
                       </div>
                     ) : (
- 
-leaderboardData.map((entry, index) => (
-  <div 
-    key={entry.userId} 
-    className="d-flex align-items-center p-3 mb-2 rounded-4" 
-    style={{
-      background: index === 0 ? 'rgba(251, 191, 36, 0.1)' : 
-                 index === 1 ? 'rgba(148, 163, 184, 0.1)' :
-                 index === 2 ? 'rgba(205, 127, 50, 0.1)' : 'transparent',
-      borderBottom: index !== leaderboardData.length - 1 ? '1px solid rgba(0, 0, 0, 0.05)' : 'none',
-      transition: 'transform 0.2s ease-out',
-      boxShadow: index < 3 ? '0 4px 6px -1px rgba(0, 0, 0, 0.05)' : 'none'
-    }}
-    onMouseOver={(e) => {e.currentTarget.style.transform = 'translateY(-2px)'}}
-    onMouseOut={(e) => {e.currentTarget.style.transform = 'translateY(0)'}}
-  >
-    {/* Position Indicator */}
-    <div className="me-3">
-      <div className="rounded-circle d-flex align-items-center justify-content-center" 
-        style={{ 
-          width: '36px', 
-          height: '36px', 
-          background: index === 0 ? 'linear-gradient(135deg, #fbbf24, #d97706)' : 
-                    index === 1 ? 'linear-gradient(135deg, #94a3b8, #64748b)' : 
-                    index === 2 ? 'linear-gradient(135deg, #cd7f32, #b06000)' : '#e2e8f0',
-          color: 'white',
-          boxShadow: index < 3 ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : 'none'
-        }}>
-        <span className="fw-bold">{index + 1}</span>
-      </div>
-    </div>
-    
-    {/* User Avatar */}
-    <div className="me-3">
-      <div className="rounded-circle d-flex align-items-center justify-content-center" 
-        style={{ 
-          width: '40px', 
-          height: '40px', 
-          background: `hsl(${(entry.userId.charCodeAt(0) * 70) % 360}, 70%, 65%)`,
-          color: 'white',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-        }}>
-        <span className="fw-bold">{getInitials(entry.name)}</span>
-      </div>
-    </div>
-    
-    {/* User Details */}
-    <div className="flex-grow-1">
-      <div className="fw-semibold">{entry.name}</div>
-      <div className="d-flex align-items-center">
-        {/* Stars based on level */}
-        <div className="me-2">
-          {[...Array(Math.min(Math.floor(entry.points / 100) + 1, 5))].map((_, i) => (
-            <StarFill key={i} size={12} className="me-1" style={{ 
-              color: index === 0 ? '#fbbf24' : 
-                    index === 1 ? '#94a3b8' : 
-                    index === 2 ? '#cd7f32' : '#cbd5e1'
-            }} />
-          ))}
-        </div>
-        <span className="text-muted small">Level {Math.floor(entry.points / 100) + 1}</span>
-      </div>
-    </div>
-    
-    {/* Points and Streak */}
-    <div>
-      <div className="fw-bold text-end" style={{ 
-        color: index === 0 ? '#d97706' : 
-              index === 1 ? '#64748b' : 
-              index === 2 ? '#b06000' : '#0f172a'
-      }}>
-        {entry.points}
-      </div>
-      <div className="d-flex align-items-center justify-content-end">
-        <Lightning size={12} className="me-1" style={{ color: "#ef4444" }} />
-        <span className="text-danger small">{entry.streak}-day streak</span>
-      </div>
-    </div>
-  </div>
-))
+                      leaderboardData.map((entry, index) => (
+                        <div 
+                          key={entry.userId} 
+                          className="d-flex align-items-center p-2 mb-2 rounded-4" 
+                          style={{
+                            background: index === 0 ? 'rgba(251, 191, 36, 0.1)' : 
+                                      index === 1 ? 'rgba(148, 163, 184, 0.1)' :
+                                      index === 2 ? 'rgba(205, 127, 50, 0.1)' : 'transparent',
+                            borderBottom: index !== leaderboardData.length - 1 ? '1px solid rgba(0, 0, 0, 0.05)' : 'none',
+                            transition: 'transform 0.2s ease-out',
+                            boxShadow: index < 3 ? '0 4px 6px -1px rgba(0, 0, 0, 0.05)' : 'none'
+                          }}
+                          onMouseOver={(e) => {e.currentTarget.style.transform = 'translateY(-2px)'}}
+                          onMouseOut={(e) => {e.currentTarget.style.transform = 'translateY(0)'}}
+                        >
+                          {/* Position Indicator */}
+                          <div className="me-2">
+                            <div className="rounded-circle d-flex align-items-center justify-content-center" 
+                              style={{ 
+                                width: '28px', 
+                                height: '28px', 
+                                background: index === 0 ? 'linear-gradient(135deg, #fbbf24, #d97706)' : 
+                                          index === 1 ? 'linear-gradient(135deg, #94a3b8, #64748b)' : 
+                                          index === 2 ? 'linear-gradient(135deg, #cd7f32, #b06000)' : '#e2e8f0',
+                                color: 'white',
+                                boxShadow: index < 3 ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : 'none'
+                              }}>
+                              <span className="fw-bold small">{index + 1}</span>
+                            </div>
+                          </div>
+                          
+                          {/* User Avatar */}
+                          <div className="me-2">
+                            <div className="rounded-circle d-flex align-items-center justify-content-center" 
+                              style={{ 
+                                width: '32px', 
+                                height: '32px', 
+                                background: `hsl(${(entry.userId.charCodeAt(0) * 70) % 360}, 70%, 65%)`,
+                                color: 'white',
+                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                              }}>
+                              <span className="fw-bold small">{getInitials(entry.name)}</span>
+                            </div>
+                          </div>
+                          
+                          {/* User Details */}
+                          <div className="flex-grow-1">
+                            <div className="fw-semibold small">{entry.name}</div>
+                            <div className="d-flex align-items-center">
+                              {/* Stars based on level */}
+                              <div className="me-1">
+                                {[...Array(Math.min(Math.floor(entry.points / 100) + 1, 5))].map((_, i) => (
+                                  <StarFill key={i} size={10} className="me-1" style={{ 
+                                    color: index === 0 ? '#fbbf24' : 
+                                          index === 1 ? '#94a3b8' : 
+                                          index === 2 ? '#cd7f32' : '#cbd5e1'
+                                  }} />
+                                ))}
+                              </div>
+                              <span className="text-muted small">Level {Math.floor(entry.points / 100) + 1}</span>
+                            </div>
+                          </div>
+                          
+                          {/* Points and Streak */}
+                          <div>
+                            <div className="fw-bold text-end small" style={{ 
+                              color: index === 0 ? '#d97706' : 
+                                    index === 1 ? '#64748b' : 
+                                    index === 2 ? '#b06000' : '#0f172a'
+                            }}>
+                              {entry.points}
+                            </div>
+                            <div className="d-flex align-items-center justify-content-end">
+                              <Lightning size={10} className="me-1" style={{ color: "#ef4444" }} />
+                              <span className="text-danger small">{entry.streak}-day streak</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))
                     )}
                   </div>
                 )}
               </div>
               
               {/* User Rank - Futuristic */}
-              <div className="mt-auto p-3 border-top">
+              <div className="mt-auto p-2 border-top">
                 <div className="d-flex align-items-center justify-content-between">
                   <div className="d-flex align-items-center">
-                    <div className="rounded-circle me-3 d-flex align-items-center justify-content-center" 
+                    <div className="rounded-circle me-2 d-flex align-items-center justify-content-center" 
                       style={{ 
-                        width: '40px', 
-                        height: '40px', 
+                        width: '32px', 
+                        height: '32px', 
                         background: `hsl(${(user?._id?.charCodeAt(0) * 70) % 360 || 0}, 70%, 65%)`,
                         color: 'white',
                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                       }}>
-                      <span className="fw-bold">{getInitials(user?.name)}</span>
+                      <span className="fw-bold small">{getInitials(user?.name)}</span>
                     </div>
                     <div>
-                      <div className="fw-semibold">Your Rank</div>
+                      <div className="fw-semibold small">Your Rank</div>
                       <div className="d-flex align-items-center">
                         {userRank ? (
                           <>
-                            <span className="badge rounded-pill me-2" style={{ 
+                            <span className="badge rounded-pill me-1" style={{ 
                               background: 'linear-gradient(to right, #3b82f6, #1e40af)',
-                              color: 'white'
+                              color: 'white',
+                              fontSize: '0.75rem'
                             }}>#{userRank}</span>
                             <span className="text-muted small">of {leaderboardData.length}+ users</span>
                           </>
@@ -802,10 +780,10 @@ leaderboardData.map((entry, index) => (
                     </div>
                   </div>
                   <div className="text-end">
-                  <Button 
+                    <Button 
                       variant="primary" 
                       size="sm" 
-                      className="rounded-pill px-3 d-flex align-items-center"
+                      className="rounded-pill px-2 d-flex align-items-center"
                       onClick={() => navigate('/leaderboard')}
                       style={{ 
                         background: 'linear-gradient(to right, #4f46e5, #3730a3)',
@@ -813,8 +791,8 @@ leaderboardData.map((entry, index) => (
                         boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.3)'
                       }}
                     >
-                      <BoxArrowUpRight size={14} className="me-2" />
-                      <span>View Full Leaderboard</span>
+                      <BoxArrowUpRight size={12} className="me-1" />
+                      <span className="small">View Full</span>
                     </Button>
                   </div>
                 </div>

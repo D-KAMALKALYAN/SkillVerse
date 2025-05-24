@@ -15,6 +15,128 @@ import {
   PeopleFill,
   ClockHistory
 } from 'react-bootstrap-icons';
+import styled from 'styled-components';
+import { breakpoints } from '../../../styles/breakpoints';
+
+// Styled components for better mobile responsiveness
+const StyledModal = styled(Modal)`
+  .modal-content {
+    border-radius: 1rem;
+    border: none;
+    overflow: hidden;
+  }
+  
+  .modal-header {
+    background: linear-gradient(135deg, #0b1437 0%, #1a237e 100%);
+    color: white;
+    border: none;
+    padding: 1.25rem;
+    
+    @media (max-width: ${breakpoints.sm}px) {
+      padding: 1rem;
+    }
+  }
+  
+  .modal-body {
+    padding: 1.5rem;
+    
+    @media (max-width: ${breakpoints.sm}px) {
+      padding: 1rem;
+    }
+  }
+  
+  .modal-footer {
+    border: none;
+    padding: 1.25rem;
+    
+    @media (max-width: ${breakpoints.sm}px) {
+      padding: 1rem;
+    }
+  }
+`;
+
+const StatusBadge = styled(Badge)`
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  background: ${props => props.$bgColor || 'rgba(16, 185, 129, 0.1)'};
+  color: ${props => props.$color || '#10b981'};
+  border: 1px solid ${props => props.$borderColor || 'rgba(16, 185, 129, 0.2)'};
+  
+  @media (max-width: ${breakpoints.sm}px) {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+  }
+`;
+
+const ActionButton = styled(Button)`
+  border-radius: 2rem;
+  padding: 0.5rem 1.25rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  background: ${props => props.$gradient || 'linear-gradient(90deg, #3b82f6, #1e40af)'};
+  border: none;
+  box-shadow: ${props => props.$shadow || '0 4px 6px -1px rgba(59, 130, 246, 0.3)'};
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: ${props => props.$hoverShadow || '0 6px 8px -1px rgba(59, 130, 246, 0.4)'};
+  }
+  
+  @media (max-width: ${breakpoints.sm}px) {
+    padding: 0.4rem 1rem;
+    font-size: 0.9rem;
+  }
+`;
+
+const IconCircle = styled.div`
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${props => props.$gradient || 'linear-gradient(135deg, #e6f0ff, #d1e2ff)'};
+  
+  @media (max-width: ${breakpoints.sm}px) {
+    width: 32px;
+    height: 32px;
+  }
+`;
+
+const InfoCard = styled.div`
+  padding: 1rem;
+  border-radius: 0.75rem;
+  background: ${props => props.$bgColor || 'rgba(59, 130, 246, 0.1)'};
+  border: 1px solid ${props => props.$borderColor || 'rgba(59, 130, 246, 0.2)'};
+  margin-bottom: 1rem;
+  
+  @media (max-width: ${breakpoints.sm}px) {
+    padding: 0.75rem;
+  }
+`;
+
+const TimeSlotCard = styled(InfoCard)`
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+`;
+
+const StatusMessageItem = styled(ListGroup.Item)`
+  padding: 1rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  
+  @media (max-width: ${breakpoints.sm}px) {
+    padding: 0.75rem;
+  }
+  
+  &:last-child {
+    border-bottom: none;
+  }
+`;
 
 const MatchDetailsModal = ({ show, handleClose, match }) => {
   // Return early if no match data is provided
@@ -157,51 +279,30 @@ const MatchDetailsModal = ({ show, handleClose, match }) => {
   const hasPreviousSessions = match.previousSessionIds && match.previousSessionIds.length > 0;
 
   return (
-    <Modal 
+    <StyledModal 
       show={show} 
       onHide={handleClose} 
       centered
       size="lg"
-      className="match-details-modal"
     >
-      <Modal.Header 
-        closeButton
-        style={{ 
-          background: 'linear-gradient(135deg, #0b1437 0%, #1a237e 100%)',
-          color: 'white',
-          border: 'none'
-        }}
-      >
+      <Modal.Header closeButton>
         <Modal.Title className="fs-5 fw-bold">Match Details</Modal.Title>
       </Modal.Header>
       
-      <Modal.Body className="p-4">
+      <Modal.Body>
         <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
           {/* Status Badge */}
           <div className="d-flex align-items-center mb-3 mb-md-0">
-            <div 
-              className="me-2 d-flex align-items-center justify-content-center"
-              style={{ 
-                width: "32px", 
-                height: "32px", 
-                borderRadius: "50%",
-                background: statusInfo.bgColor,
-                color: statusInfo.color
-              }}
-            >
+            <IconCircle className="me-2" $gradient={`linear-gradient(135deg, ${statusInfo.bgColor}, ${statusInfo.borderColor})`}>
               {statusInfo.icon}
-            </div>
-            <Badge 
-              className="rounded-pill px-3 py-2"
-              style={{ 
-                background: statusInfo.bgColor,
-                color: statusInfo.color,
-                border: `1px solid ${statusInfo.borderColor}`,
-                fontSize: '0.9rem'
-              }}
+            </IconCircle>
+            <StatusBadge 
+              $bgColor={statusInfo.bgColor}
+              $color={statusInfo.color}
+              $borderColor={statusInfo.borderColor}
             >
               {statusInfo.status}
-            </Badge>
+            </StatusBadge>
           </div>
           
           {/* Created/Updated date info */}
@@ -228,10 +329,9 @@ const MatchDetailsModal = ({ show, handleClose, match }) => {
             <div className="mb-4">
               <h5 className="text-muted mb-3 fw-bold">Requester</h5>
               <div className="d-flex align-items-center">
-                <div className="d-flex align-items-center justify-content-center rounded-circle bg-info bg-opacity-10 me-3" 
-                  style={{ width: '48px', height: '48px' }}>
-                  <PersonFill size={24} className="text-info" />
-                </div>
+                <IconCircle className="me-3" $gradient="linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(6, 182, 212, 0.2))">
+                  <PersonFill size={24} style={{ color: '#06b6d4' }} />
+                </IconCircle>
                 <div>
                   <h6 className="mb-0 fw-bold">{match.requesterName}</h6>
                   <p className="mb-0 text-muted small">ID: {String(match.requesterId).substring(0, 8)}...</p>
@@ -243,10 +343,9 @@ const MatchDetailsModal = ({ show, handleClose, match }) => {
             <div className="mb-4">
               <h5 className="text-muted mb-3 fw-bold">Skill Sharer</h5>
               <div className="d-flex align-items-center">
-                <div className="d-flex align-items-center justify-content-center rounded-circle bg-primary bg-opacity-10 me-3" 
-                  style={{ width: '48px', height: '48px' }}>
-                  <PersonFill size={24} className="text-primary" />
-                </div>
+                <IconCircle className="me-3" $gradient="linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.2))">
+                  <PersonFill size={24} style={{ color: '#3b82f6' }} />
+                </IconCircle>
                 <div>
                   <h6 className="mb-0 fw-bold">{match.teacherName}</h6>
                   <p className="mb-0 text-muted small">ID: {String(match.teacherId).substring(0, 8)}...</p>
@@ -256,7 +355,7 @@ const MatchDetailsModal = ({ show, handleClose, match }) => {
             
             {/* Previous Match Status */}
             {match.previouslyMatched && (
-              <div className="mb-4 p-3 rounded-3" style={{ backgroundColor: "rgba(59, 130, 246, 0.1)" }}>
+              <InfoCard $bgColor="rgba(59, 130, 246, 0.1)" $borderColor="rgba(59, 130, 246, 0.2)">
                 <div className="d-flex align-items-center">
                   <PeopleFill className="text-primary me-2" />
                   <div>
@@ -268,18 +367,18 @@ const MatchDetailsModal = ({ show, handleClose, match }) => {
                     )}
                   </div>
                 </div>
-              </div>
+              </InfoCard>
             )}
 
             {/* Rejection Reason (if applicable) */}
             {match.status === 'rejected' && match.rejectionReason && (
-              <div className="mb-4 p-3 rounded-3" style={{ backgroundColor: "rgba(239, 68, 68, 0.1)" }}>
+              <InfoCard $bgColor="rgba(239, 68, 68, 0.1)" $borderColor="rgba(239, 68, 68, 0.2)">
                 <h5 className="text-danger mb-2 d-flex align-items-center">
                   <XCircleFill className="me-2" />
                   Rejection Reason
                 </h5>
                 <p className="mb-0">{match.rejectionReason}</p>
-              </div>
+              </InfoCard>
             )}
           </Col>
 
@@ -291,7 +390,7 @@ const MatchDetailsModal = ({ show, handleClose, match }) => {
                 <h5 className="text-muted mb-3 fw-bold">
                   Scheduled Time
                 </h5>
-                <div className="p-3 rounded-3" style={{ backgroundColor: "rgba(16, 185, 129, 0.1)" }}>
+                <TimeSlotCard $bgColor="rgba(16, 185, 129, 0.1)" $borderColor="rgba(16, 185, 129, 0.2)">
                   <div className="d-flex align-items-center mb-2">
                     <CalendarCheck className="me-2 text-success" />
                     <span className="fw-bold">Selected Time Slot</span>
@@ -316,7 +415,7 @@ const MatchDetailsModal = ({ show, handleClose, match }) => {
                         ` on ${new Date(match.selectedTimeSlot.selectedAt).toLocaleDateString()}`}
                     </small>
                   </div>
-                </div>
+                </TimeSlotCard>
               </div>
             )}
 
@@ -328,28 +427,26 @@ const MatchDetailsModal = ({ show, handleClose, match }) => {
                 </h5>
                 
                 {match.proposedTimeSlots.map((slot, index) => (
-                  <div key={index} className="d-flex align-items-start mb-2 p-3 rounded-3" 
-                    style={{ 
-                      backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                      border: '1px solid rgba(59, 130, 246, 0.2)'
-                    }}>
-                    <CalendarCheck className="me-2 text-primary mt-1" />
-                    <div>
-                      <div className="fw-bold mb-1">Option {index + 1}</div>
-                      <div className="mb-1">
-                        <strong>Start:</strong> {formatDateTime(slot.startTime)}
+                  <TimeSlotCard key={index} $bgColor="rgba(59, 130, 246, 0.1)" $borderColor="rgba(59, 130, 246, 0.2)">
+                    <div className="d-flex align-items-start">
+                      <CalendarCheck className="me-2 text-primary mt-1" />
+                      <div>
+                        <div className="fw-bold mb-1">Option {index + 1}</div>
+                        <div className="mb-1">
+                          <strong>Start:</strong> {formatDateTime(slot.startTime)}
+                        </div>
+                        <div className="mb-1">
+                          <strong>End:</strong> {formatDateTime(slot.endTime)}
+                        </div>
+                        <div className="mb-1">
+                          <strong>Duration:</strong> {calculateDuration(slot.startTime, slot.endTime)} minutes
+                        </div>
+                        <small className="text-muted">
+                          Proposed by: {slot.proposedBy === match.requesterId ? match.requesterName : match.teacherName}
+                        </small>
                       </div>
-                      <div className="mb-1">
-                        <strong>End:</strong> {formatDateTime(slot.endTime)}
-                      </div>
-                      <div className="mb-1">
-                        <strong>Duration:</strong> {calculateDuration(slot.startTime, slot.endTime)} minutes
-                      </div>
-                      <small className="text-muted">
-                        Proposed by: {slot.proposedBy === match.requesterId ? match.requesterName : match.teacherName}
-                      </small>
                     </div>
-                  </div>
+                  </TimeSlotCard>
                 ))}
               </div>
             )}
@@ -362,7 +459,7 @@ const MatchDetailsModal = ({ show, handleClose, match }) => {
             <h5 className="text-muted mb-3 fw-bold">Status Updates</h5>
             <ListGroup variant="flush" className="border rounded-3">
               {getStatusMessages().map((statusMsg, index) => (
-                <ListGroup.Item key={index} className="py-3 px-3 border-bottom">
+                <StatusMessageItem key={index}>
                   <div className="d-flex align-items-center mb-1">
                     <ChatDotsFill className="text-primary me-2" size={14} />
                     <strong className="me-2">
@@ -374,7 +471,7 @@ const MatchDetailsModal = ({ show, handleClose, match }) => {
                     </small>
                   </div>
                   <p className="mb-0 ps-4">{statusMsg.message}</p>
-                </ListGroup.Item>
+                </StatusMessageItem>
               ))}
             </ListGroup>
           </div>
@@ -382,7 +479,7 @@ const MatchDetailsModal = ({ show, handleClose, match }) => {
 
         {/* Current Session Info (if any) */}
         {hasActiveSession && (
-          <div className="mt-4 p-3 rounded-3 bg-success bg-opacity-10 border border-success border-opacity-25">
+          <InfoCard $bgColor="rgba(16, 185, 129, 0.1)" $borderColor="rgba(16, 185, 129, 0.2)">
             <div className="d-flex align-items-center mb-2">
               <CheckCircleFill className="text-success me-2" />
               <h5 className="mb-0 fw-bold">Active Session</h5>
@@ -390,84 +487,78 @@ const MatchDetailsModal = ({ show, handleClose, match }) => {
             <p className="mb-0 ps-4">
               Session ID: {String(match.currentSessionId).substring(0, 8)}...
             </p>
-          </div>
+          </InfoCard>
         )}
       </Modal.Body>
       
-      <Modal.Footer className="border-0 pt-0">
+      <Modal.Footer>
         <div className="d-flex flex-column flex-sm-row w-100 gap-2">
-          <Button 
+          <ActionButton 
             variant="secondary" 
             onClick={handleClose}
-            className="rounded-pill px-4 order-2 order-sm-1"
+            className="order-2 order-sm-1"
+            $gradient="linear-gradient(to right, #64748b, #475569)"
+            $shadow="0 4px 6px -1px rgba(100, 116, 139, 0.3)"
+            $hoverShadow="0 6px 8px -1px rgba(100, 116, 139, 0.4)"
           >
             Close
-          </Button>
+          </ActionButton>
           
           <div className="d-flex flex-column flex-sm-row gap-2 ms-auto order-1 order-sm-2">
             {match.status === 'pending' && (
               <>
-                <Button 
+                <ActionButton 
                   variant="danger" 
-                  className="rounded-pill px-4"
+                  $gradient="linear-gradient(to right, #ef4444, #dc2626)"
+                  $shadow="0 4px 6px -1px rgba(239, 68, 68, 0.3)"
+                  $hoverShadow="0 6px 8px -1px rgba(239, 68, 68, 0.4)"
                 >
                   Reject
-                </Button>
-                <Button 
-                  variant="primary" 
-                  className="rounded-pill px-4"
-                  style={{ 
-                    background: 'linear-gradient(to right, #3b82f6, #1e40af)',
-                    border: 'none',
-                    boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.3)',
-                  }}
+                </ActionButton>
+                <ActionButton 
+                  $gradient="linear-gradient(to right, #3b82f6, #1e40af)"
+                  $shadow="0 4px 6px -1px rgba(59, 130, 246, 0.3)"
+                  $hoverShadow="0 6px 8px -1px rgba(59, 130, 246, 0.4)"
                 >
                   Accept Match
-                </Button>
+                </ActionButton>
               </>
             )}
             
             {match.status === 'accepted' && !hasActiveSession && (
-              <Button 
-                variant="success" 
-                className="rounded-pill px-4"
-                style={{ 
-                  background: 'linear-gradient(to right, #10b981, #059669)',
-                  border: 'none',
-                  boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.3)',
-                }}
+              <ActionButton 
+                $gradient="linear-gradient(to right, #10b981, #059669)"
+                $shadow="0 4px 6px -1px rgba(16, 185, 129, 0.3)"
+                $hoverShadow="0 6px 8px -1px rgba(16, 185, 129, 0.4)"
               >
                 Start Session
-              </Button>
+              </ActionButton>
             )}
             
             {(match.status === 'accepted' || match.status === 'rescheduled') && (
-              <Button 
-                variant="warning" 
-                className="rounded-pill px-4"
-                style={{ 
-                  background: 'linear-gradient(to right, #f59e0b, #d97706)',
-                  border: 'none',
-                  color: 'white',
-                  boxShadow: '0 4px 6px -1px rgba(245, 158, 11, 0.3)',
-                }}
+              <ActionButton 
+                $gradient="linear-gradient(to right, #f59e0b, #d97706)"
+                $shadow="0 4px 6px -1px rgba(245, 158, 11, 0.3)"
+                $hoverShadow="0 6px 8px -1px rgba(245, 158, 11, 0.4)"
               >
                 Reschedule
-              </Button>
+              </ActionButton>
             )}
             
             {match.status !== 'completed' && match.status !== 'canceled' && match.status !== 'rejected' && (
-              <Button 
+              <ActionButton 
                 variant="outline-danger" 
-                className="rounded-pill px-4"
+                $gradient="linear-gradient(to right, #ef4444, #dc2626)"
+                $shadow="0 4px 6px -1px rgba(239, 68, 68, 0.3)"
+                $hoverShadow="0 6px 8px -1px rgba(239, 68, 68, 0.4)"
               >
                 Cancel Match
-              </Button>
+              </ActionButton>
             )}
           </div>
         </div>
       </Modal.Footer>
-    </Modal>
+    </StyledModal>
   );
 };
 

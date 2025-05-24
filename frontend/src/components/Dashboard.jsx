@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Container, Card, Button, Spinner, Nav, Row, Col, Alert } from 'react-bootstrap';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { Container, Card, Button, Spinner, Nav, Alert } from 'react-bootstrap';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useAuth } from '../context/AuthContext';
@@ -23,25 +23,41 @@ const BACKEND_URL = apiConfig.BACKEND_URL;
 console.log('Backend URL:', BACKEND_URL);
 console.log('API URL:', apiConfig.API_URL);
 
-// Styled components for responsive design
+// Enhanced styled components with better responsive design
 const FullScreenContainer = styled(Container)`
   min-height: 100vh;
   padding: 0;
   margin: 0;
   max-width: 100%;
+  background-color: #f8f9fa;
 `;
 
 const DashboardContent = styled.div`
-  padding: 0 1rem;
+  padding: 1rem;
+  width: 100%;
+  margin: 0 auto;
+  transition: all 0.3s ease;
+  
+  @media (min-width: 576px) {
+    padding: 1.5rem;
+  }
+  
+  @media (min-width: 768px) {
+    padding: 2rem;
+  }
   
   @media (min-width: 992px) {
-    padding: 0 2rem;
+    padding: 2.5rem;
+    max-width: 1400px;
   }
   
   @media (min-width: 1200px) {
-    padding: 0 3rem;
+    padding: 3rem;
+    max-width: 1600px;
+  }
+  
+  @media (min-width: 1400px) {
     max-width: 1800px;
-    margin: 0 auto;
   }
 `;
 
@@ -51,6 +67,10 @@ const TabNavigation = styled(Nav)`
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  margin-bottom: 1.5rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
   
   &::-webkit-scrollbar {
     display: none;
@@ -59,9 +79,15 @@ const TabNavigation = styled(Nav)`
   .nav-link {
     white-space: nowrap;
     font-weight: 600;
-    padding: 1rem 1.5rem;
+    padding: 1rem 1.25rem;
     color: #6c757d;
     border: none;
+    transition: all 0.2s ease;
+    
+    @media (max-width: 576px) {
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+    }
     
     &.active {
       color: #0d6efd;
@@ -81,7 +107,7 @@ const LoadingOverlay = styled.div`
   top: 0;
   left: 0;
   right: 0;
-  height: 4px;
+  height: 3px;
   background: linear-gradient(to right, transparent, #0d6efd, transparent);
   animation: progress 1.5s infinite;
   z-index: 1100;
@@ -93,12 +119,38 @@ const LoadingOverlay = styled.div`
 `;
 
 const ErrorAlert = styled(Alert)`
-  margin: 1rem;
+  margin: 1rem 0;
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  border: none;
+`;
+
+const LoadingSpinner = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #f8f9fa;
+  
+  .spinner {
+    width: 3rem;
+    height: 3rem;
+    margin-bottom: 1rem;
+  }
+  
+  h4 {
+    color: #0d6efd;
+    margin-bottom: 0.5rem;
+  }
+  
+  p {
+    color: #6c757d;
+  }
 `;
 
 const Dashboard = () => {
+  // State management with proper initialization
   const [stats, setStats] = useState({
     points: 0,
     sessionsCompleted: 0,
@@ -123,32 +175,24 @@ const Dashboard = () => {
   const location = useLocation();
   const refreshTimeoutRef = useRef(null);
 
-  // Auto-refresh mechanism when child components trigger updates
+  // Memoized handlers and callbacks
   const handleChildUpdate = useCallback(() => {
-    // Clear any existing timeout to prevent multiple refreshes
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current);
     }
-    
-    // Set a small delay before refreshing to batch potential multiple updates
     refreshTimeoutRef.current = setTimeout(() => {
       triggerRefresh();
     }, 300);
   }, []);
 
-  // Create a memoized refresh function with forced updates
   const triggerRefresh = useCallback(async () => {
-    // First update the refresh trigger
     setRefreshTrigger(prev => prev + 1);
     
-    // Then force a direct data fetch with no delay
     if (user?._id) {
       try {
         setIsLoading(true);
         
-        // Force fetch all critical data in parallel
         const [leaderboardResponse, pointsResponse] = await Promise.all([
-          // Force fetch leaderboard directly
           fetch(`${BACKEND_URL}/api/points/leaderboard`, {
             method: 'GET',
             headers: {
@@ -156,10 +200,8 @@ const Dashboard = () => {
               'Authorization': `Bearer ${localStorage.getItem('token')}`,
             },
             cache: 'no-store',
-            credentials: 'include' // Include credentials for potential CORS situations
+            credentials: 'include'
           }),
-          
-          // Force fetch user points directly
           fetch(`${BACKEND_URL}/api/points/user-points`, {
             method: 'GET',
             headers: {
@@ -171,27 +213,16 @@ const Dashboard = () => {
           })
         ]);
         
-        // Handle potential API errors
-        if (!leaderboardResponse.ok) {
-          console.warn(`Leaderboard fetch failed: ${leaderboardResponse.status}`);
-        }
-        
-        if (!pointsResponse.ok) {
-          console.warn(`Points fetch failed: ${pointsResponse.status}`);
-        }
-        
-        // Parse responses
         const [leaderboardData, pointsData] = await Promise.all([
           leaderboardResponse.ok ? leaderboardResponse.json() : { userRank: null, leaderboard: [] },
           pointsResponse.ok ? pointsResponse.json() : { points: 0, streak: 0 }
         ]);
         
-        // Immediate state update with latest data
         setStats(prevStats => ({
           ...prevStats,
-          points: pointsData.points !== undefined ? pointsData.points : prevStats.points,
-          streak: pointsData.streak !== undefined ? pointsData.streak : prevStats.streak,
-          userRank: leaderboardData.userRank !== undefined ? leaderboardData.userRank : prevStats.userRank,
+          points: pointsData.points ?? prevStats.points,
+          streak: pointsData.streak ?? prevStats.streak,
+          userRank: leaderboardData.userRank ?? prevStats.userRank,
           leaderboard: leaderboardData.leaderboard || prevStats.leaderboard
         }));
       } catch (error) {
@@ -204,81 +235,15 @@ const Dashboard = () => {
     }
   }, [user]);
 
-  // Clean up timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (refreshTimeoutRef.current) {
-        clearTimeout(refreshTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  // Check if user just logged in
-  useEffect(() => {
-    const checkLoginStatus = async () => {
-      const justLoggedIn = sessionStorage.getItem('justLoggedIn');
-      
-      if (justLoggedIn === 'true' && user?._id) {
-        // Clear the flag
-        sessionStorage.removeItem('justLoggedIn');
-        
-        // Give a little time for everything to initialize properly
-        setTimeout(() => {
-          // Perform daily check-in automatically
-          handleDailyCheckIn();
-        }, 1000);
-      }
-    };
-    
-    checkLoginStatus();
-  }, [user]); // Only run when user changes
-
-  // Load user profile - now responds to refreshTrigger
-  useEffect(() => {
-    if (user?._id) {
-      setIsLoading(true);
-      setError(null);
-      loadUserProfile()
-        .finally(() => {
-          setIsLoading(false);
-          if (isFirstLoad) {
-            setIsFirstLoad(false);
-          }
-        });
-    } else {
-      setIsLoading(false);
-    }
-  }, [user, refreshTrigger]); // Added refreshTrigger as a dependency
-
-  // Redirect to login if no user
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!user && !isLoading) {
-        navigate('/login', { state: { from: location }, replace: true });
-      }
-    }, 1000);
-    
-    return () => clearTimeout(timer);
-  }, [user, isLoading, navigate, location]);
-
-  const handleLogout = () => {
-    logout();
-    navigate('/', { replace: true });
-  };
-
-  // Improved toast display function to address "cannot set properties of undefined" error
-  const safeToast = (content, options = {}) => {
+  // Memoized toast function
+  const safeToast = useCallback((content, options = {}) => {
     if (!content) return null;
     
-    // Clone options to avoid mutations
     const safeOptions = { ...options };
-    
-    // Remove any problematic handlers that might cause closure issues
     if (safeOptions.onClose) delete safeOptions.onClose;
     if (safeOptions.onOpen) delete safeOptions.onOpen;
     
     try {
-      // Use a simple configuration approach
       return toast(content, {
         closeOnClick: true,
         autoClose: 5000,
@@ -290,46 +255,34 @@ const Dashboard = () => {
       });
     } catch (error) {
       console.error('Toast error:', error);
-      console.log('Toast message:', typeof content === 'string' ? content : 'Notification');
       return null;
     }
-  };
+  }, []);
 
-  // Updated toast for check-in with a more modern, cleaner design
-  const showFuturisticCheckInToast = (pointsEarned = 1, streak = 1) => {
-    // Create streak display with fire emoji for each 5 days of streak
-    const getStreakDisplay = () => {
-      const fireEmojis = '🔥'.repeat(Math.floor(streak / 5) || 1);
-      return `${streak} day${streak !== 1 ? 's' : ''} ${fireEmojis}`;
-    };
-
-    // Create content for the toast
-    const message = `DAILY CHECK-IN COMPLETE\n💰 +${pointsEarned} | ⚡ ${getStreakDisplay()}`;
+  // Memoized check-in toast
+  const showFuturisticCheckInToast = useCallback((pointsEarned = 1, streak = 1) => {
+    const fireEmojis = '🔥'.repeat(Math.floor(streak / 5) || 1);
+    const message = `DAILY CHECK-IN COMPLETE\n💰 +${pointsEarned} | ⚡ ${streak} day${streak !== 1 ? 's' : ''} ${fireEmojis}`;
     
-    // Modern, cleaner toast style
-    const toastStyle = {
-      background: 'linear-gradient(to right, #4776E6, #8E54E9)',
-      color: '#fff',
-      borderRadius: '8px',
-      textAlign: 'center',
-      fontSize: '16px',
-      lineHeight: '1.6',
-      fontWeight: 'bold',
-      boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
-    };
-
-    // Display the toast with the new styling
     safeToast(message, {
       type: 'success',
       position: "top-right",
       autoClose: 5000,
-      style: toastStyle,
-      className: 'modern-toast'
+      style: {
+        background: 'linear-gradient(to right, #4776E6, #8E54E9)',
+        color: '#fff',
+        borderRadius: '8px',
+        textAlign: 'center',
+        fontSize: '16px',
+        lineHeight: '1.6',
+        fontWeight: 'bold',
+        boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
+      }
     });
-  };
+  }, [safeToast]);
 
-  // Handle daily check-in and show toast notification
-  const handleDailyCheckIn = async () => {
+  // Memoized handlers
+  const handleDailyCheckIn = useCallback(async () => {
     try {
       const response = await fetch(`${BACKEND_URL}/api/points/checkin`, {
         method: 'POST',
@@ -340,116 +293,36 @@ const Dashboard = () => {
         credentials: 'include'
       });
       
-      // Parse the response json regardless of status code
       const data = await response.json();
       
       if (response.ok && data.success) {
-        // Show the updated toast message with streak information
         showFuturisticCheckInToast(data.pointsEarned || 1, data.streak || 1);
-        
-        // Force immediate refresh of leaderboard data
         await triggerRefresh();
+      } else if (data.message === 'Already checked in today') {
+        safeToast(`You've already checked in today! Current streak: ${data.streak || 0} days`, {
+          type: 'info',
+          style: {
+            background: 'linear-gradient(to right, #3498db, #2980b9)',
+            color: '#fff',
+            borderRadius: '8px',
+            textAlign: 'center',
+            fontSize: '16px',
+            lineHeight: '1.6',
+            fontWeight: 'bold',
+            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
+          }
+        });
       } else {
-        // Check specifically for the already checked in message
-        if (data.message === 'Already checked in today') {
-          // Show a friendly reminder toast instead of an error
-          safeToast(`You've already checked in today! Current streak: ${data.streak || 0} days`, {
-            type: 'info',
-            style: {
-              background: 'linear-gradient(to right, #3498db, #2980b9)',
-              color: '#fff',
-              borderRadius: '8px',
-              textAlign: 'center',
-              fontSize: '16px',
-              lineHeight: '1.6',
-              fontWeight: 'bold',
-              boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
-            }
-          });
-        } else {
-          // Handle other error cases
-          safeToast(data.message || 'Unable to process check-in', {
-            type: 'warning'
-          });
-        }
+        safeToast(data.message || 'Unable to process check-in', { type: 'warning' });
       }
     } catch (error) {
       console.error('Check-in error:', error);
-      safeToast('Failed to process daily check-in. Please try again later.', {
-        type: 'error'
-      });
+      safeToast('Failed to process daily check-in. Please try again later.', { type: 'error' });
     }
-  };
+  }, [BACKEND_URL, safeToast, showFuturisticCheckInToast, triggerRefresh]);
 
-  const handleFindLearningMatches = async () => {
-    try {
-      setIsGeneratingMatches(true);
-      const response = await fetch(`${BACKEND_URL}/api/matches/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({ userId: user._id }),
-        credentials: 'include'
-      });
-  
-      if (!response.ok) {
-        throw new Error(`Failed to generate matches: ${response.status}`);
-      }
-  
-      const result = await response.json();
-  
-      // Check both learning and teaching matches
-      const learningMatches = result.matchesFound || [];
-      const teachingMatches = result.teachingMatchesCreated || [];
-      const totalMatches = learningMatches.length + teachingMatches.length;
-      
-      if (totalMatches > 0) {
-        let message = '';
-        
-        if (learningMatches.length > 0 && teachingMatches.length > 0) {
-          // Both learning and teaching matches found
-          message = `🎉 Found ${learningMatches.length} learning matches and created ${teachingMatches.length} teaching matches!`;
-        } else if (learningMatches.length > 0) {
-          // Only learning matches found
-          message = `🎉 Found ${learningMatches.length} matches for your learning needs!`;
-        } else {
-          // Only teaching matches created
-          message = `🎉 Created ${teachingMatches.length} teaching matches!`;
-        }
-        
-        safeToast(message, {
-          type: 'success'
-        });
-      } else {
-        safeToast('ℹ️ No new matches found. Try adding more skills you want to learn or teach!', {
-          type: 'info'
-        });
-      }
-  
-      // Force immediate refresh with no delay
-      await triggerRefresh();
-      
-      // Navigate to the appropriate matching interface tab
-      if (learningMatches.length > 0) {
-        navigate('/match/learning');
-      } else if (teachingMatches.length > 0) {
-        navigate('/match/teaching');
-      } else {
-        navigate('/match/learning');
-      }
-    } catch (error) {
-      console.error('Error generating matches:', error);
-      safeToast('❌ Failed to generate matches. Please try again.', {
-        type: 'error'
-      });
-    } finally {
-      setIsGeneratingMatches(false);
-    }
-  };
-
-  const fetchUserPoints = async (userId) => {
+  // Add back fetchUserPoints with memoization
+  const fetchUserPoints = useCallback(async (userId) => {
     try {
       const response = await fetch(`${BACKEND_URL}/api/points/user-points`, {
         method: 'GET',
@@ -457,7 +330,7 @@ const Dashboard = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
-        cache: 'no-store', // Prevent caching
+        cache: 'no-store',
         credentials: 'include'
       });
   
@@ -475,97 +348,180 @@ const Dashboard = () => {
         }));
         
         return pointsData;
-      } else {
-        console.warn('Points data fetch returned unsuccessful status');
-        return { points: 0, streak: 0 };
       }
+      
+      return { points: 0, streak: 0 };
     } catch (error) {
       console.error('Error fetching user points:', error);
-      safeToast('Failed to load your points information', {
-        type: 'error'
-      });
+      safeToast('Failed to load your points information', { type: 'error' });
       return { points: 0, streak: 0 };
     }
-  };
+  }, [BACKEND_URL, safeToast]);
 
-  // Enhanced loadUserProfile function with better error handling
-
-const loadUserProfile = async () => {
-  try {
-    if (!user || !user._id) {
-      throw new Error('User not authenticated');
+  const handleFindLearningMatches = useCallback(async () => {
+    try {
+      setIsGeneratingMatches(true);
+      const response = await fetch(`${BACKEND_URL}/api/matches/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({ userId: user._id }),
+        credentials: 'include'
+      });
+  
+      if (!response.ok) throw new Error(`Failed to generate matches: ${response.status}`);
+  
+      const result = await response.json();
+      const learningMatches = result.matchesFound || [];
+      const teachingMatches = result.teachingMatchesCreated || [];
+      const totalMatches = learningMatches.length + teachingMatches.length;
+      
+      if (totalMatches > 0) {
+        const message = learningMatches.length > 0 && teachingMatches.length > 0
+          ? `🎉 Found ${learningMatches.length} learning matches and created ${teachingMatches.length} teaching matches!`
+          : learningMatches.length > 0
+            ? `🎉 Found ${learningMatches.length} matches for your learning needs!`
+            : `🎉 Created ${teachingMatches.length} teaching matches!`;
+        
+        safeToast(message, { type: 'success' });
+      } else {
+        safeToast('ℹ️ No new matches found. Try adding more skills you want to learn or teach!', { type: 'info' });
+      }
+  
+      await triggerRefresh();
+      
+      navigate('/match/learning');
+    } catch (error) {
+      console.error('Error generating matches:', error);
+      safeToast('❌ Failed to generate matches. Please try again.', { type: 'error' });
+    } finally {
+      setIsGeneratingMatches(false);
     }
-    
-    // Use Promise.allSettled instead of Promise.all to prevent one failure from affecting others
-    const [userDataResult, completedSessionsResult, pointsDataResult, leaderboardDataResult] = 
-      await Promise.allSettled([
-        fetchUserProfile(user._id, BACKEND_URL),
-        fetchCompletedSessionsCount(user._id, BACKEND_URL),
-        fetchUserPoints(user._id),
-        fetch(`${BACKEND_URL}/api/points/leaderboard`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          },
-          cache: 'no-store',
-          credentials: 'include'
-        }).then(res => {
-          if (!res.ok) throw new Error(`Failed to fetch leaderboard: ${res.status}`);
-          return res.json();
-        })
-      ]);
-    
-    // Process results safely, handling potential rejections
-    const userData = userDataResult.status === 'fulfilled' ? userDataResult.value : {};
-    const completedSessionsCount = completedSessionsResult.status === 'fulfilled' ? completedSessionsResult.value : 0;
-    const pointsData = pointsDataResult.status === 'fulfilled' ? pointsDataResult.value : { points: 0, streak: 0 };
-    const leaderboardData = leaderboardDataResult.status === 'fulfilled' ? leaderboardDataResult.value : { userRank: null, leaderboard: [] };
-    
-    // Update all state at once
-    setStats(prevStats => ({
-      ...prevStats,
-      ...userData,
-      sessionsCompleted: completedSessionsCount,
-      points: pointsData.points || 0,
-      streak: pointsData.streak || 0,
-      userRank: leaderboardData.userRank,
-      leaderboard: leaderboardData.leaderboard || []
-    }));
-    
-    setError(null);
-  } catch (error) {
-    console.error('Error loading user profile:', error);
-    // Set a more informative but less alarming error message
-    setError('Unable to load complete profile data. Some features may be limited.');
-    safeToast('Some profile data couldn\'t be loaded', {
-      type: 'warning'
-    });
-  }
-};
+  }, [BACKEND_URL, user, safeToast, triggerRefresh, navigate]);
 
-  // Calculate skill distribution percentages
-  const teachingSkillsCount = stats.teachingSkills?.length || 0;
-  const learningSkillsCount = stats.learningSkills?.length || 0;
-  const totalSkills = teachingSkillsCount + learningSkillsCount;
-  const teachingPercentage = totalSkills > 0 ? Math.round((teachingSkillsCount / totalSkills) * 100) : 0;
-  const learningPercentage = totalSkills > 0 ? 100 - teachingPercentage : 0;
+  // Memoized loadUserProfile function
+  const loadUserProfile = useCallback(async () => {
+    try {
+      if (!user?._id) throw new Error('User not authenticated');
+      
+      const [userDataResult, completedSessionsResult, pointsDataResult, leaderboardDataResult] = 
+        await Promise.allSettled([
+          fetchUserProfile(user._id, BACKEND_URL),
+          fetchCompletedSessionsCount(user._id, BACKEND_URL),
+          fetchUserPoints(user._id),
+          fetch(`${BACKEND_URL}/api/points/leaderboard`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            },
+            cache: 'no-store',
+            credentials: 'include'
+          }).then(res => {
+            if (!res.ok) throw new Error(`Failed to fetch leaderboard: ${res.status}`);
+            return res.json();
+          })
+        ]);
+      
+      const userData = userDataResult.status === 'fulfilled' ? userDataResult.value : {};
+      const completedSessionsCount = completedSessionsResult.status === 'fulfilled' ? completedSessionsResult.value : 0;
+      const pointsData = pointsDataResult.status === 'fulfilled' ? pointsDataResult.value : { points: 0, streak: 0 };
+      const leaderboardData = leaderboardDataResult.status === 'fulfilled' ? leaderboardDataResult.value : { userRank: null, leaderboard: [] };
+      
+      setStats(prevStats => ({
+        ...prevStats,
+        ...userData,
+        sessionsCompleted: completedSessionsCount,
+        points: pointsData.points || 0,
+        streak: pointsData.streak || 0,
+        userRank: leaderboardData.userRank,
+        leaderboard: leaderboardData.leaderboard || []
+      }));
+      
+      setError(null);
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+      setError('Unable to load complete profile data. Some features may be limited.');
+      safeToast('Some profile data couldn\'t be loaded', { type: 'warning' });
+    }
+  }, [user, BACKEND_URL, safeToast, fetchUserPoints]);
 
+  // Memoized skill distribution calculations
+  const skillDistribution = useMemo(() => {
+    const teachingSkillsCount = stats.teachingSkills?.length || 0;
+    const learningSkillsCount = stats.learningSkills?.length || 0;
+    const totalSkills = teachingSkillsCount + learningSkillsCount;
+    return {
+      teachingPercentage: totalSkills > 0 ? Math.round((teachingSkillsCount / totalSkills) * 100) : 0,
+      learningPercentage: totalSkills > 0 ? 100 - Math.round((teachingSkillsCount / totalSkills) * 100) : 0
+    };
+  }, [stats.teachingSkills, stats.learningSkills]);
+
+  // Effects
+  useEffect(() => {
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const checkLoginStatus = async () => {
+      const justLoggedIn = sessionStorage.getItem('justLoggedIn');
+      
+      if (justLoggedIn === 'true' && user?._id) {
+        sessionStorage.removeItem('justLoggedIn');
+        setTimeout(() => handleDailyCheckIn(), 1000);
+      }
+    };
+    
+    checkLoginStatus();
+  }, [user, handleDailyCheckIn]);
+
+  useEffect(() => {
+    if (user?._id) {
+      setIsLoading(true);
+      setError(null);
+      loadUserProfile()
+        .finally(() => {
+          setIsLoading(false);
+          if (isFirstLoad) {
+            setIsFirstLoad(false);
+          }
+        });
+    } else {
+      setIsLoading(false);
+    }
+  }, [user, refreshTrigger, loadUserProfile, isFirstLoad]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!user && !isLoading) {
+        navigate('/login', { state: { from: location }, replace: true });
+      }
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, [user, isLoading, navigate, location]);
+
+  // Loading state
   if (isLoading && isFirstLoad) {
     return (
-      <FullScreenContainer fluid className="vh-100 d-flex justify-content-center align-items-center bg-light">
-        <div className="text-center">
-          <Spinner animation="border" variant="primary" style={{ width: "3rem", height: "3rem" }} className="mb-4" />
-          <h4 className="text-primary">Loading your dashboard...</h4>
-          <p className="text-muted">Please wait while we prepare your experience</p>
-        </div>
-      </FullScreenContainer>
+      <LoadingSpinner>
+        <Spinner animation="border" variant="primary" className="spinner" />
+        <h4>Loading your dashboard...</h4>
+        <p>Please wait while we prepare your experience</p>
+      </LoadingSpinner>
     );
   }
 
+  // Error state
   if (error && !user) {
     return (
-      <FullScreenContainer fluid className="vh-100 d-flex justify-content-center align-items-center bg-light">
+      <FullScreenContainer fluid className="vh-100 d-flex justify-content-center align-items-center">
         <Card className="shadow-lg border-0 p-4 text-center" style={{ maxWidth: "500px" }}>
           <Card.Body>
             <h3 className="text-danger mb-3">Authentication Error</h3>
@@ -585,33 +541,29 @@ const loadUserProfile = async () => {
   }
 
   return (
-    <FullScreenContainer fluid className="dashboard-wrapper bg-light">
-      {/* Loading indicator */}
+    <FullScreenContainer fluid>
       {isLoading && <LoadingOverlay />}
       
-      {/* Toast Container with fixed configuration to avoid errors */}
       <ToastContainer
         position="top-right"
         autoClose={5000}
         hideProgressBar={false}
         newestOnTop
-        closeOnClick={true}
+        closeOnClick
         rtl={false}
-        pauseOnFocusLoss={false} /* Disabled to avoid potential issues */
-        draggable={true}
-        pauseOnHover={true}
-        limit={3} /* Limit concurrent toasts to avoid performance issues */
+        pauseOnFocusLoss={false}
+        draggable
+        pauseOnHover
+        limit={3}
       />
       
-      {/* Header with Navigation */}
       <DashboardHeader 
-        handleLogout={handleLogout} 
+        handleLogout={logout}
         navigate={navigate} 
         onUpdate={handleChildUpdate}
       />
 
       <DashboardContent>
-        {/* Error alert */}
         {error && (
           <ErrorAlert variant="danger" dismissible onClose={() => setError(null)}>
             <Alert.Heading>Error</Alert.Heading>
@@ -619,22 +571,20 @@ const loadUserProfile = async () => {
           </ErrorAlert>
         )}
 
-        {/* User Welcome Card */}
         <UserWelcomeCard 
           user={user}
           stats={stats}
           handleFindLearningMatches={handleFindLearningMatches}
           isGeneratingMatches={isGeneratingMatches}
-          teachingPercentage={teachingPercentage}
-          learningPercentage={learningPercentage}
+          teachingPercentage={skillDistribution.teachingPercentage}
+          learningPercentage={skillDistribution.learningPercentage}
           handleDailyCheckIn={handleDailyCheckIn}
           navigate={navigate}
           onUpdate={handleChildUpdate}
         />
 
-        {/* Tab Navigation - Responsive */}
-        <div className="dashboard-tabs mb-4">
-          <TabNavigation className="mb-4">
+        <div className="dashboard-tabs">
+          <TabNavigation>
             <Nav.Item>
               <Nav.Link 
                 onClick={() => setActiveTab('overview')}
@@ -674,7 +624,6 @@ const loadUserProfile = async () => {
           </TabNavigation>
         </div>
 
-        {/* Tab Content */}
         <div className="tab-content pb-5">
           {activeTab === 'overview' && (
             <OverviewTab 

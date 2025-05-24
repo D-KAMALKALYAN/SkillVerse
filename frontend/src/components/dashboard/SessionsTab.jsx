@@ -10,9 +10,93 @@ import {
   CheckCircleFill,
   ChevronRight,
   MortarboardFill,
-  BookFill
+  BookFill,
+  Lightning
 } from 'react-bootstrap-icons';
 import { isSessionJoinable, getTimeUntilSession } from './dashboardUtils';
+import styled from 'styled-components';
+import { breakpoints } from '../../styles/breakpoints';
+
+// Styled components for better mobile responsiveness
+const StyledCard = styled(Card)`
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+  background: ${props => props.$gradient || 'linear-gradient(to right bottom, #ffffff, #f8f9ff)'};
+  box-shadow: ${props => props.$isHovered ? '0 15px 30px rgba(0, 123, 255, 0.1)' : '0 5px 15px rgba(0, 0, 0, 0.05)'};
+  transform: ${props => props.$isHovered ? 'translateY(-5px)' : 'none'};
+  
+  @media (max-width: ${breakpoints.sm}px) {
+    margin-bottom: 1rem;
+  }
+`;
+
+const SessionCard = styled(Card)`
+  border: none;
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+  background: ${props => props.$isEven ? '#f8f9ff' : '#ffffff'};
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  }
+  
+  @media (max-width: ${breakpoints.sm}px) {
+    margin-bottom: 1rem;
+  }
+`;
+
+const StatusBadge = styled(Badge)`
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  background: ${props => props.$bgColor || 'rgba(16, 185, 129, 0.1)'};
+  color: ${props => props.$color || '#10b981'};
+  border: 1px solid ${props => props.$borderColor || 'rgba(16, 185, 129, 0.2)'};
+  
+  @media (max-width: ${breakpoints.sm}px) {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+  }
+`;
+
+const ActionButton = styled(Button)`
+  border-radius: 2rem;
+  padding: 0.5rem 1.25rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  background: ${props => props.$isJoinable ? 'linear-gradient(90deg, #10b981, #059669)' : '#e5e7eb'};
+  border: none;
+  box-shadow: ${props => props.$isJoinable ? '0 4px 6px -1px rgba(16, 185, 129, 0.3)' : 'none'};
+  color: ${props => props.$isJoinable ? 'white' : '#9ca3af'};
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: ${props => props.$isJoinable ? '0 6px 8px -1px rgba(16, 185, 129, 0.4)' : 'none'};
+  }
+  
+  @media (max-width: ${breakpoints.sm}px) {
+    padding: 0.4rem 1rem;
+    font-size: 0.9rem;
+  }
+`;
+
+const IconCircle = styled.div`
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${props => props.$gradient || 'linear-gradient(135deg, #e6f0ff, #d1e2ff)'};
+  
+  @media (max-width: ${breakpoints.sm}px) {
+    width: 32px;
+    height: 32px;
+  }
+`;
 
 const SessionsTab = ({ sessions, matches, navigate, loading = false }) => {
   // Helper function to get skill name
@@ -71,7 +155,7 @@ const SessionsTab = ({ sessions, matches, navigate, loading = false }) => {
   }
 
   return (
-    <Card className="mb-4 shadow-lg border-0 rounded-4 overflow-hidden">
+    <StyledCard className="mb-4 shadow-lg border-0 rounded-4 overflow-hidden">
       <div style={{ 
         background: 'linear-gradient(135deg, #0b1437 0%, #1a237e 100%)',
         padding: '1.5rem',
@@ -101,16 +185,9 @@ const SessionsTab = ({ sessions, matches, navigate, loading = false }) => {
         <Row className="align-items-center position-relative">
           <Col>
             <div className="d-flex align-items-center">
-              <div className="rounded-circle d-flex align-items-center justify-content-center me-3" 
-                style={{ 
-                  width: '42px', 
-                  height: '42px', 
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                }}>
+              <IconCircle className="me-3" $gradient="linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.2))">
                 <CalendarCheck size={20} className="text-white" />
-              </div>
+              </IconCircle>
               <h3 className="mb-0" style={{ fontWeight: '700', letterSpacing: '-0.5px' }}>
                 Upcoming Sessions
               </h3>
@@ -129,14 +206,96 @@ const SessionsTab = ({ sessions, matches, navigate, loading = false }) => {
               const statusInfo = getSessionStatus(session);
               
               return (
-                <SessionCard 
-                  key={i} 
-                  session={session}
-                  skillName={skillName}
-                  statusInfo={statusInfo}
-                  sessionStart={sessionStart}
-                  isJoinable={isJoinable}
-                />
+                <SessionCard key={i} $isEven={i % 2 === 0}>
+                  <Card.Body className="p-0">
+                    <Row className="g-0">
+                      {/* Status Indicator */}
+                      <Col xs="auto">
+                        <div 
+                          className="d-flex align-items-center justify-content-center h-100"
+                          style={{ 
+                            width: '10px', 
+                            background: statusInfo.color,
+                          }}
+                        ></div>
+                      </Col>
+                      
+                      {/* Session Details */}
+                      <Col>
+                        <div className="p-3">
+                          <Row className="align-items-center">
+                            {/* Left section: Status and Title */}
+                            <Col xs={12} md={4} className="mb-3 mb-md-0">
+                              <div className="d-flex align-items-center mb-2">
+                                <IconCircle className="me-2" $gradient={`linear-gradient(135deg, ${statusInfo.bgColor}, ${statusInfo.borderColor})`}>
+                                  {statusInfo.icon}
+                                </IconCircle>
+                                <StatusBadge 
+                                  $bgColor={statusInfo.bgColor}
+                                  $color={statusInfo.color}
+                                  $borderColor={statusInfo.borderColor}
+                                >
+                                  {statusInfo.status}
+                                </StatusBadge>
+                              </div>
+                              <h5 className="fw-bold mb-0" style={{ color: '#0f172a' }}>
+                                {skillName}
+                              </h5>
+                            </Col>
+                            
+                            {/* Middle section: Date/Time and Person */}
+                            <Col xs={12} md={5} className="mb-3 mb-md-0">
+                              <div className="d-flex flex-column flex-md-row">
+                                <div className="me-md-4 mb-2 mb-md-0">
+                                  <div className="text-muted small mb-1">Date & Time</div>
+                                  <div className="d-flex align-items-center">
+                                    <CalendarCheck className="me-2" style={{ color: '#3b82f6' }} />
+                                    <div>
+                                      {sessionStart.toLocaleDateString()} at {sessionStart.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-muted small mb-1">Teacher</div>
+                                  <div className="d-flex align-items-center">
+                                    <PersonFill className="me-2" style={{ color: '#3b82f6' }} />
+                                    <div>{session.teacherName}</div>
+                                  </div>
+                                </div>
+                              </div>
+                            </Col>
+                            
+                            {/* Right section: Action */}
+                            <Col xs={12} md={3} className="d-flex align-items-center justify-content-between justify-content-md-end">
+                              <OverlayTrigger
+                                placement="top"
+                                overlay={
+                                  <Tooltip id={`tooltip-session-action`}>
+                                    {isJoinable ? 'Click to join the session' : 'This button will be enabled 5 minutes before the session starts'}
+                                  </Tooltip>
+                                }
+                              >
+                                <div>
+                                  <ActionButton 
+                                    href={session.meetLink || '#'} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    disabled={!isJoinable}
+                                    $isJoinable={isJoinable}
+                                    className="d-flex align-items-center"
+                                  >
+                                    {isJoinable ? 'Join Now' : 'Join Soon'}
+                                    <ChevronRight className="ms-1" size={16} />
+                                  </ActionButton>
+                                </div>
+                              </OverlayTrigger>
+                            </Col>
+                          </Row>
+                        </div>
+                      </Col>
+                    </Row>
+                  </Card.Body>
+                </SessionCard>
               );
             })}
           </div>
@@ -151,146 +310,20 @@ const SessionsTab = ({ sessions, matches, navigate, loading = false }) => {
             <Button 
               variant="primary" 
               onClick={() => navigate('/match/learning')}
-              className="rounded-pill px-4 py-2"
+              className="rounded-pill px-4 py-2 d-inline-flex align-items-center"
               style={{ 
                 background: 'linear-gradient(to right, #3b82f6, #1e40af)',
                 border: 'none',
                 boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.3)'
               }}
             >
+              <Lightning className="me-2" />
               Find Learning Opportunities
             </Button>
           </div>
         )}
       </Card.Body>
-    </Card>
-  );
-};
-
-// Session Card Component
-const SessionCard = ({ session, skillName, statusInfo, sessionStart, isJoinable }) => {
-  return (
-    <Card 
-      className="border-0 shadow-sm rounded-4 overflow-hidden"
-      style={{ 
-        transition: 'transform 0.2s ease-out, box-shadow 0.2s ease-out',
-      }}
-      onMouseOver={(e) => {
-        e.currentTarget.style.transform = 'translateY(-3px)';
-        e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
-      }}
-      onMouseOut={(e) => {
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
-      }}
-    >
-      <Card.Body className="p-0">
-        <Row className="g-0">
-          {/* Status Indicator */}
-          <Col xs="auto">
-            <div 
-              className="d-flex align-items-center justify-content-center h-100"
-              style={{ 
-                width: '10px', 
-                background: statusInfo.color,
-              }}
-            ></div>
-          </Col>
-          
-          {/* Session Details */}
-          <Col>
-            <div className="p-3">
-              <Row className="align-items-center">
-                {/* Left section: Status and Title */}
-                <Col xs={12} md={4} className="mb-3 mb-md-0">
-                  <div className="d-flex align-items-center mb-2">
-                    <div 
-                      className="me-2 d-flex align-items-center justify-content-center"
-                      style={{ 
-                        width: '28px', 
-                        height: '28px', 
-                        borderRadius: '50%',
-                        background: statusInfo.bgColor,
-                        color: statusInfo.color
-                      }}
-                    >
-                      {statusInfo.icon}
-                    </div>
-                    <Badge 
-                      className="rounded-pill px-3 py-2"
-                      style={{ 
-                        background: statusInfo.bgColor,
-                        color: statusInfo.color,
-                        border: `1px solid ${statusInfo.borderColor}`,
-                      }}
-                    >
-                      {statusInfo.status}
-                    </Badge>
-                  </div>
-                  <h5 className="fw-bold mb-0" style={{ color: '#0f172a' }}>
-                    {skillName}
-                  </h5>
-                </Col>
-                
-                {/* Middle section: Date/Time and Person */}
-                <Col xs={12} md={5} className="mb-3 mb-md-0">
-                  <div className="d-flex flex-column flex-md-row">
-                    <div className="me-md-4 mb-2 mb-md-0">
-                      <div className="text-muted small mb-1">Date & Time</div>
-                      <div className="d-flex align-items-center">
-                        <CalendarCheck className="me-2" style={{ color: '#3b82f6' }} />
-                        <div>
-                          {sessionStart.toLocaleDateString()} at {sessionStart.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-muted small mb-1">Teacher</div>
-                      <div className="d-flex align-items-center">
-                        <PersonFill className="me-2" style={{ color: '#3b82f6' }} />
-                        <div>{session.teacherName}</div>
-                      </div>
-                    </div>
-                  </div>
-                </Col>
-                
-                {/* Right section: Action */}
-                <Col xs={12} md={3} className="d-flex align-items-center justify-content-between justify-content-md-end">
-                  <OverlayTrigger
-                    placement="top"
-                    overlay={
-                      <Tooltip id={`tooltip-session-action`}>
-                        {isJoinable ? 'Click to join the session' : 'This button will be enabled 5 minutes before the session starts'}
-                      </Tooltip>
-                    }
-                  >
-                    <div>
-                      <Button 
-                        variant="primary" 
-                        href={session.meetLink || '#'} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        disabled={!isJoinable}
-                        className="rounded-pill d-flex align-items-center" 
-                        style={{ 
-                          background: isJoinable ? 'linear-gradient(to right, #10b981, #059669)' : '#e5e7eb',
-                          border: 'none',
-                          boxShadow: isJoinable ? '0 4px 6px -1px rgba(16, 185, 129, 0.3)' : 'none',
-                          color: isJoinable ? 'white' : '#9ca3af',
-                        }}
-                      >
-                        {isJoinable ? 'Join Now' : 'Join Soon'}
-                        <ChevronRight className="ms-1" size={16} />
-                      </Button>
-                    </div>
-                  </OverlayTrigger>
-                </Col>
-              </Row>
-            </div>
-          </Col>
-        </Row>
-      </Card.Body>
-    </Card>
+    </StyledCard>
   );
 };
 

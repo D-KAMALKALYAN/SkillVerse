@@ -8,12 +8,94 @@ import {
   StarFill,
   LightningChargeFill
 } from 'react-bootstrap-icons';
+import styled from 'styled-components';
+import { breakpoints } from '../../styles/breakpoints';
+
+// Styled components for better mobile responsiveness
+const StyledCard = styled(Card)`
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+  background: ${props => props.$gradient || 'linear-gradient(to right bottom, #ffffff, #f8f9ff)'};
+  box-shadow: ${props => props.$isHovered ? '0 15px 30px rgba(0, 123, 255, 0.1)' : '0 5px 15px rgba(0, 0, 0, 0.05)'};
+  transform: ${props => props.$isHovered ? 'translateY(-5px)' : 'none'};
+  
+  @media (max-width: ${breakpoints.sm}px) {
+    margin-bottom: 1rem;
+  }
+`;
+
+const SkillCard = styled(Card)`
+  border: none;
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+  background: ${props => props.$isEven ? '#f8f9ff' : '#ffffff'};
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  }
+  
+  @media (max-width: ${breakpoints.sm}px) {
+    margin-bottom: 1rem;
+  }
+`;
+
+const StatusBadge = styled(Badge)`
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  background: ${props => props.$bgColor || 'rgba(16, 185, 129, 0.1)'};
+  color: ${props => props.$color || '#10b981'};
+  border: 1px solid ${props => props.$borderColor || 'rgba(16, 185, 129, 0.2)'};
+  
+  @media (max-width: ${breakpoints.sm}px) {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+  }
+`;
+
+const ActionButton = styled(Button)`
+  border-radius: 2rem;
+  padding: 0.5rem 1.25rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  background: ${props => props.$gradient || 'linear-gradient(90deg, #3b82f6, #1e40af)'};
+  border: none;
+  box-shadow: ${props => props.$shadow || '0 4px 6px -1px rgba(59, 130, 246, 0.3)'};
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: ${props => props.$hoverShadow || '0 6px 8px -1px rgba(59, 130, 246, 0.4)'};
+  }
+  
+  @media (max-width: ${breakpoints.sm}px) {
+    padding: 0.4rem 1rem;
+    font-size: 0.9rem;
+  }
+`;
+
+const IconCircle = styled.div`
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${props => props.$gradient || 'linear-gradient(135deg, #e6f0ff, #d1e2ff)'};
+  
+  @media (max-width: ${breakpoints.sm}px) {
+    width: 32px;
+    height: 32px;
+  }
+`;
 
 const SkillsTab = ({ teachingSkills, learningSkills, navigate }) => {
   return (
     <Row className="g-4">
       <Col xs={12} lg={6}>
-        <Card className="h-100 mb-4 shadow-lg border-0 rounded-4 overflow-hidden">
+        <StyledCard className="h-100 mb-4 shadow-lg border-0 rounded-4 overflow-hidden">
           <div style={{ 
             background: 'linear-gradient(135deg, #0b5e41 0%, #10b981 100%)',
             padding: '1.5rem',
@@ -42,21 +124,14 @@ const SkillsTab = ({ teachingSkills, learningSkills, navigate }) => {
             
             <div className="d-flex justify-content-between align-items-center position-relative">
               <div className="d-flex align-items-center">
-                <div className="rounded-circle d-flex align-items-center justify-content-center me-3" 
-                  style={{ 
-                    width: '42px', 
-                    height: '42px', 
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                  }}>
+                <IconCircle className="me-3" $gradient="linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.2))">
                   <MortarboardFill size={20} className="text-white" />
-                </div>
+                </IconCircle>
                 <h3 className="mb-0" style={{ fontWeight: '700', letterSpacing: '-0.5px' }}>
                   Skills I Can Teach
                 </h3>
               </div>
-              <Button 
+              <ActionButton 
                 variant="light" 
                 className="d-flex align-items-center rounded-pill"
                 style={{
@@ -71,7 +146,7 @@ const SkillsTab = ({ teachingSkills, learningSkills, navigate }) => {
               >
                 <PlusCircleFill size={16} className="me-2" />
                 Add New
-              </Button>
+              </ActionButton>
             </div>
           </div>
 
@@ -79,21 +154,7 @@ const SkillsTab = ({ teachingSkills, learningSkills, navigate }) => {
             {teachingSkills && teachingSkills.length > 0 ? (
               <div className="d-flex flex-column gap-3">
                 {teachingSkills.map((skill, index) => (
-                  <Card 
-                    key={index} 
-                    className="border-0 shadow-sm rounded-4 overflow-hidden hover-card"
-                    style={{ 
-                      transition: 'transform 0.2s ease-out, box-shadow 0.2s ease-out',
-                    }}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-3px)';
-                      e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
-                    }}
-                  >
+                  <SkillCard key={index} $isEven={index % 2 === 0}>
                     <Card.Body className="p-0">
                       <Row className="g-0">
                         {/* Status Indicator */}
@@ -114,16 +175,13 @@ const SkillsTab = ({ teachingSkills, learningSkills, navigate }) => {
                               <h5 className="fw-bold mb-0" style={{ color: '#0f172a' }}>
                                 {skill.skillName}
                               </h5>
-                              <Badge 
-                                className="rounded-pill px-3 py-2"
-                                style={{ 
-                                  background: 'rgba(16, 185, 129, 0.1)',
-                                  color: '#ffffff',
-                                  border: '1px solid rgba(16, 185, 129, 0.2)',
-                                }}
+                              <StatusBadge 
+                                $bgColor="rgba(16, 185, 129, 0.1)"
+                                $color="#10b981"
+                                $borderColor="rgba(16, 185, 129, 0.2)"
                               >
                                 Teacher
-                              </Badge>
+                              </StatusBadge>
                             </div>
                             <div className="d-flex align-items-center mb-2">
                               <StarFill className="me-2" style={{ color: '#f59e0b' }} />
@@ -136,7 +194,7 @@ const SkillsTab = ({ teachingSkills, learningSkills, navigate }) => {
                         </Col>
                       </Row>
                     </Card.Body>
-                  </Card>
+                  </SkillCard>
                 ))}
               </div>
             ) : (
@@ -152,27 +210,24 @@ const SkillsTab = ({ teachingSkills, learningSkills, navigate }) => {
                 </div>
                 <h4 className="fw-bold mb-2">No Teaching Skills</h4>
                 <p className="text-muted mb-4">You haven't added any skills that you can teach yet.</p>
-                <Button 
-                  variant="success" 
+                <ActionButton 
                   onClick={() => navigate('/profile')}
                   className="rounded-pill px-4 py-2 d-inline-flex align-items-center"
-                  style={{ 
-                    background: 'linear-gradient(to right, #10b981, #059669)',
-                    border: 'none',
-                    boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.3)'
-                  }}
+                  $gradient="linear-gradient(to right, #10b981, #059669)"
+                  $shadow="0 4px 6px -1px rgba(16, 185, 129, 0.3)"
+                  $hoverShadow="0 6px 8px -1px rgba(16, 185, 129, 0.4)"
                 >
                   Add Skills to Teach
                   <ChevronRight className="ms-2" size={16} />
-                </Button>
+                </ActionButton>
               </div>
             )}
           </Card.Body>
-        </Card>
+        </StyledCard>
       </Col>
 
       <Col xs={12} lg={6}>
-        <Card className="h-100 mb-4 shadow-lg border-0 rounded-4 overflow-hidden">
+        <StyledCard className="h-100 mb-4 shadow-lg border-0 rounded-4 overflow-hidden">
           <div style={{ 
             background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
             padding: '1.5rem',
@@ -201,21 +256,14 @@ const SkillsTab = ({ teachingSkills, learningSkills, navigate }) => {
             
             <div className="d-flex justify-content-between align-items-center position-relative">
               <div className="d-flex align-items-center">
-                <div className="rounded-circle d-flex align-items-center justify-content-center me-3" 
-                  style={{ 
-                    width: '42px', 
-                    height: '42px', 
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                  }}>
+                <IconCircle className="me-3" $gradient="linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.2))">
                   <BookFill size={20} className="text-white" />
-                </div>
+                </IconCircle>
                 <h3 className="mb-0" style={{ fontWeight: '700', letterSpacing: '-0.5px' }}>
                   Skills I Want to Learn
                 </h3>
               </div>
-              <Button 
+              <ActionButton 
                 variant="light" 
                 className="d-flex align-items-center rounded-pill"
                 style={{
@@ -230,7 +278,7 @@ const SkillsTab = ({ teachingSkills, learningSkills, navigate }) => {
               >
                 <PlusCircleFill size={16} className="me-2" />
                 Add New
-              </Button>
+              </ActionButton>
             </div>
           </div>
 
@@ -238,21 +286,7 @@ const SkillsTab = ({ teachingSkills, learningSkills, navigate }) => {
             {learningSkills && learningSkills.length > 0 ? (
               <div className="d-flex flex-column gap-3">
                 {learningSkills.map((skill, index) => (
-                  <Card 
-                    key={index} 
-                    className="border-0 shadow-sm rounded-4 overflow-hidden hover-card"
-                    style={{ 
-                      transition: 'transform 0.2s ease-out, box-shadow 0.2s ease-out',
-                    }}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-3px)';
-                      e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
-                    }}
-                  >
+                  <SkillCard key={index} $isEven={index % 2 === 0}>
                     <Card.Body className="p-0">
                       <Row className="g-0">
                         {/* Status Indicator */}
@@ -273,16 +307,13 @@ const SkillsTab = ({ teachingSkills, learningSkills, navigate }) => {
                               <h5 className="fw-bold mb-0" style={{ color: '#0f172a' }}>
                                 {skill.skillName}
                               </h5>
-                              <Badge 
-                                className="rounded-pill px-3 py-2"
-                                style={{ 
-                                  background: 'rgba(59, 130, 246, 0.1)',
-                                  color: '#ffffff',
-                                  border: '1px solid rgba(59, 130, 246, 0.2)',
-                                }}
+                              <StatusBadge 
+                                $bgColor="rgba(59, 130, 246, 0.1)"
+                                $color="#3b82f6"
+                                $borderColor="rgba(59, 130, 246, 0.2)"
                               >
                                 Learner
-                              </Badge>
+                              </StatusBadge>
                             </div>
                             <div className="d-flex align-items-center mb-2">
                               <LightningChargeFill className="me-2" style={{ color: '#f59e0b' }} />
@@ -295,7 +326,7 @@ const SkillsTab = ({ teachingSkills, learningSkills, navigate }) => {
                         </Col>
                       </Row>
                     </Card.Body>
-                  </Card>
+                  </SkillCard>
                 ))}
               </div>
             ) : (
@@ -311,23 +342,20 @@ const SkillsTab = ({ teachingSkills, learningSkills, navigate }) => {
                 </div>
                 <h4 className="fw-bold mb-2">No Learning Skills</h4>
                 <p className="text-muted mb-4">You haven't added any skills that you want to learn yet.</p>
-                <Button 
-                  variant="primary" 
+                <ActionButton 
                   onClick={() => navigate('/profile')}
                   className="rounded-pill px-4 py-2 d-inline-flex align-items-center"
-                  style={{ 
-                    background: 'linear-gradient(to right, #3b82f6, #1e40af)',
-                    border: 'none',
-                    boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.3)'
-                  }}
+                  $gradient="linear-gradient(to right, #3b82f6, #1e40af)"
+                  $shadow="0 4px 6px -1px rgba(59, 130, 246, 0.3)"
+                  $hoverShadow="0 6px 8px -1px rgba(59, 130, 246, 0.4)"
                 >
                   Add Skills to Learn
                   <ChevronRight className="ms-2" size={16} />
-                </Button>
+                </ActionButton>
               </div>
             )}
           </Card.Body>
-        </Card>
+        </StyledCard>
       </Col>
     </Row>
   );

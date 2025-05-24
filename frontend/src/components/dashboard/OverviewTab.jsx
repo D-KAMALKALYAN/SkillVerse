@@ -11,6 +11,87 @@ import {
   PlusCircleFill
 } from 'react-bootstrap-icons';
 import { isSessionJoinable, getTimeUntilSession } from './dashboardUtils';
+import styled from 'styled-components';
+import { breakpoints } from '../../styles/breakpoints';
+
+// Styled components for better mobile responsiveness
+const StyledCard = styled(Card)`
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+  background: ${props => props.$gradient || 'linear-gradient(to right bottom, #ffffff, #f8f9ff)'};
+  box-shadow: ${props => props.$isHovered ? '0 15px 30px rgba(0, 123, 255, 0.1)' : '0 5px 15px rgba(0, 0, 0, 0.05)'};
+  transform: ${props => props.$isHovered ? 'translateY(-5px)' : 'none'};
+  
+  @media (max-width: ${breakpoints.sm}px) {
+    margin-bottom: 1rem;
+  }
+`;
+
+const CardHeader = styled(Card.Header)`
+  border-radius: 1rem 1rem 0 0;
+  border: none;
+  padding: 1.25rem;
+  background: ${props => props.$gradient || 'linear-gradient(135deg, #4361ee, #3f37c9)'};
+  
+  @media (max-width: ${breakpoints.sm}px) {
+    padding: 1rem;
+  }
+`;
+
+const ActionButton = styled(Button)`
+  border-radius: 1rem;
+  border: 2px solid #e0e7ff;
+  background: linear-gradient(to right, #ffffff, #f5f7ff);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  padding: 1rem;
+  
+  @media (max-width: ${breakpoints.sm}px) {
+    padding: 0.75rem;
+  }
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+  }
+`;
+
+const SessionItem = styled.div`
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  transition: background-color 0.3s ease;
+  background-color: ${props => props.$isEven ? '#f8f9ff' : '#ffffff'};
+  
+  @media (max-width: ${breakpoints.sm}px) {
+    padding: 1rem;
+  }
+`;
+
+const MatchItem = styled.div`
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  transition: background-color 0.3s ease;
+  background-color: ${props => props.$isEven ? '#f8fff9' : '#ffffff'};
+  
+  @media (max-width: ${breakpoints.sm}px) {
+    padding: 1rem;
+  }
+`;
+
+const IconCircle = styled.div`
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${props => props.$gradient || 'linear-gradient(135deg, #e6f0ff, #d1e2ff)'};
+  
+  @media (max-width: ${breakpoints.sm}px) {
+    width: 32px;
+    height: 32px;
+  }
+`;
 
 const OverviewTab = ({ 
   stats, 
@@ -29,7 +110,6 @@ const OverviewTab = ({
       return [];
     }
     
-    // Use a Map to track sessions by ID
     const sessionMap = new Map();
     stats.upcomingSessions.forEach(session => {
       if (!sessionMap.has(session._id)) {
@@ -45,57 +125,37 @@ const OverviewTab = ({
       <Col lg={8}>
         <Row className="g-4">
           <Col md={6}>
-            <Card 
-              className="h-100 border-0 shadow-sm" 
-              style={{
-                borderRadius: '1rem',
-                background: 'linear-gradient(to right bottom, #ffffff, #f8f9ff)',
-                transition: 'all 0.3s ease',
-                transform: hoveredCard === 'upcoming' ? 'translateY(-5px)' : 'none',
-                boxShadow: hoveredCard === 'upcoming' ? '0 15px 30px rgba(0, 123, 255, 0.1)' : '0 5px 15px rgba(0, 0, 0, 0.05)'
-              }}
+            <StyledCard 
+              $isHovered={hoveredCard === 'upcoming'}
+              $gradient="linear-gradient(to right bottom, #ffffff, #f8f9ff)"
               onMouseEnter={() => setHoveredCard('upcoming')}
               onMouseLeave={() => setHoveredCard(null)}
             >
-              <Card.Header className="bg-primary text-white d-flex justify-content-between align-items-center" 
-                style={{ 
-                  borderRadius: '1rem 1rem 0 0',
-                  background: 'linear-gradient(135deg, #4361ee, #3f37c9)',
-                  border: 'none',
-                  padding: '1.25rem'
-                }}>
-                <div className="d-flex align-items-center">
-                  <Clock className="me-2" size={24} />
-                  <h5 className="mb-0 fw-bold">Upcoming Sessions</h5>
+              <CardHeader $gradient="linear-gradient(135deg, #4361ee, #3f37c9)">
+                <div className="d-flex justify-content-between align-items-center">
+                  <div className="d-flex align-items-center">
+                    <Clock className="me-2" size={24} />
+                    <h5 className="mb-0 fw-bold text-white">Upcoming Sessions</h5>
+                  </div>
+                  <Badge bg="light" text="primary" pill 
+                    style={{ 
+                      fontSize: '0.9rem', 
+                      padding: '0.5rem 0.8rem',
+                      boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)'
+                    }}>
+                    {uniqueUpcomingSessions.length}
+                  </Badge>
                 </div>
-                <Badge bg="light" text="primary" pill 
-                  style={{ 
-                    fontSize: '0.9rem', 
-                    padding: '0.5rem 0.8rem',
-                    boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)'
-                  }}>
-                  {uniqueUpcomingSessions.length}
-                </Badge>
-              </Card.Header>
+              </CardHeader>
               <Card.Body className="p-0">
                 {uniqueUpcomingSessions && uniqueUpcomingSessions.length > 0 ? (
                   <div className="list-group list-group-flush">
                     {uniqueUpcomingSessions.map((session, i) => {
                       const sessionStart = new Date(session.startTime);
                       const isJoinable = isSessionJoinable(session.startTime);
+                      let skillName = session.skillName || 
+                        (stats.recentMatches?.find(match => match._id === session.matchId)?.skillName || '');
                       
-                      // Find the skill name from session or matches data
-                      let skillName = '';
-                      if (session.skillName) {
-                        skillName = session.skillName;
-                      } else if (stats.recentMatches && stats.recentMatches.length > 0) {
-                        const relatedMatch = stats.recentMatches.find(match => match._id === session.matchId);
-                        if (relatedMatch && relatedMatch.skillName) {
-                          skillName = relatedMatch.skillName;
-                        }
-                      }
-                      
-                      // Calculate time until session becomes joinable
                       let tooltipText = '';
                       if (!isJoinable) {
                         const now = new Date();
@@ -103,49 +163,31 @@ const OverviewTab = ({
                         if (timeDiff > 5 * 60 * 1000) {
                           const minutesRemaining = Math.floor(timeDiff / 60000) - 5;
                           const hoursRemaining = Math.floor(minutesRemaining / 60);
-                          
-                          if (hoursRemaining > 0) {
-                            tooltipText = `This button will be enabled in ${hoursRemaining} hour${hoursRemaining > 1 ? 's' : ''} and ${minutesRemaining % 60} minute${(minutesRemaining % 60) !== 1 ? 's' : ''} before the session`;
-                          } else {
-                            tooltipText = `This button will be enabled in ${minutesRemaining} minute${minutesRemaining !== 1 ? 's' : ''} before the session`;
-                          }
+                          tooltipText = hoursRemaining > 0
+                            ? `This button will be enabled in ${hoursRemaining} hour${hoursRemaining > 1 ? 's' : ''} and ${minutesRemaining % 60} minute${(minutesRemaining % 60) !== 1 ? 's' : ''} before the session`
+                            : `This button will be enabled in ${minutesRemaining} minute${minutesRemaining !== 1 ? 's' : ''} before the session`;
                         }
                       }
 
                       return (
-                        <div 
-                          key={session._id || i} 
-                          className="list-group-item p-4 border-0 border-bottom"
-                          style={{
-                            transition: 'background-color 0.3s ease',
-                            backgroundColor: i % 2 === 0 ? '#f8f9ff' : '#ffffff',
-                          }}
-                        >
-                          <div className="d-flex justify-content-between">
-                            <div>
+                        <SessionItem key={session._id || i} $isEven={i % 2 === 0}>
+                          <div className="d-flex flex-column flex-sm-row justify-content-between">
+                            <div className="mb-3 mb-sm-0">
                               <h6 className="mb-1 fw-bold" style={{ color: '#4361ee' }}>{skillName}</h6>
                               <div className="text-muted mb-3" style={{ fontSize: '0.85rem' }}>
                                 <CalendarCheck className="me-1" />
                                 {sessionStart.toLocaleDateString()} at {sessionStart.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                               </div>
                               <div className="d-flex align-items-center">
-                                <div className="rounded-circle p-2 me-2" 
-                                  style={{ 
-                                    background: 'linear-gradient(135deg, #e6f0ff, #d1e2ff)',
-                                    width: '40px', 
-                                    height: '40px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center'
-                                  }}>
+                                <IconCircle className="me-2">
                                   <PersonFill className="text-primary" />
-                                </div>
+                                </IconCircle>
                                 <div>
                                   <span style={{ fontSize: '0.9rem' }}>Skill Sharer: <span className="fw-bold">{session.teacherName}</span></span>
                                 </div>
                               </div>
                             </div>
-                            <div className="ms-3 d-flex flex-column justify-content-between align-items-end">
+                            <div className="d-flex flex-column align-items-end">
                               <Badge 
                                 bg={isJoinable ? 'success' : 'secondary'} 
                                 className="mb-3 px-3 py-2"
@@ -193,7 +235,7 @@ const OverviewTab = ({
                               </OverlayTrigger>
                             </div>
                           </div>
-                        </div>
+                        </SessionItem>
                       );
                     })}
                   </div>
@@ -221,41 +263,31 @@ const OverviewTab = ({
                   </div>
                 )}
               </Card.Body>
-            </Card>
+            </StyledCard>
           </Col>
           <Col md={6}>
-            <Card 
-              className="h-100 border-0 shadow-sm" 
-              style={{
-                borderRadius: '1rem',
-                background: 'linear-gradient(to right bottom, #ffffff, #f8fff9)',
-                transition: 'all 0.3s ease',
-                transform: hoveredCard === 'matches' ? 'translateY(-5px)' : 'none',
-                boxShadow: hoveredCard === 'matches' ? '0 15px 30px rgba(16, 185, 129, 0.1)' : '0 5px 15px rgba(0, 0, 0, 0.05)'
-              }}
+            <StyledCard 
+              $isHovered={hoveredCard === 'matches'}
+              $gradient="linear-gradient(to right bottom, #ffffff, #f8fff9)"
               onMouseEnter={() => setHoveredCard('matches')}
               onMouseLeave={() => setHoveredCard(null)}
             >
-              <Card.Header className="bg-success text-white d-flex justify-content-between align-items-center" 
-                style={{ 
-                  borderRadius: '1rem 1rem 0 0',
-                  background: 'linear-gradient(135deg, #10b981, #059669)',
-                  border: 'none',
-                  padding: '1.25rem'
-                }}>
-                <div className="d-flex align-items-center">
-                  <BarChartFill className="me-2" size={24} />
-                  <h5 className="mb-0 fw-bold">Recent Matches</h5>
+              <CardHeader $gradient="linear-gradient(135deg, #10b981, #059669)">
+                <div className="d-flex justify-content-between align-items-center">
+                  <div className="d-flex align-items-center">
+                    <BarChartFill className="me-2" size={24} />
+                    <h5 className="mb-0 fw-bold text-white">Recent Matches</h5>
+                  </div>
+                  <Badge bg="light" text="success" pill 
+                    style={{ 
+                      fontSize: '0.9rem', 
+                      padding: '0.5rem 0.8rem',
+                      boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)'
+                    }}>
+                    {stats.recentMatches?.length || 0}
+                  </Badge>
                 </div>
-                <Badge bg="light" text="success" pill 
-                  style={{ 
-                    fontSize: '0.9rem', 
-                    padding: '0.5rem 0.8rem',
-                    boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)'
-                  }}>
-                  {stats.recentMatches?.length || 0}
-                </Badge>
-              </Card.Header>
+              </CardHeader>
               <Card.Body className="p-0">
                 {stats.recentMatches && stats.recentMatches.length > 0 ? (
                   <div className="list-group list-group-flush">
@@ -265,35 +297,20 @@ const OverviewTab = ({
                       const roleLabel = isTeacher ? "Learner" : "Skill Sharer";
                       
                       return (
-                        <div 
-                          key={match._id || i} 
-                          className="list-group-item p-4 border-0 border-bottom"
-                          style={{
-                            transition: 'background-color 0.3s ease',
-                            backgroundColor: i % 2 === 0 ? '#f8fff9' : '#ffffff',
-                          }}
-                        >
-                          <div className="d-flex justify-content-between align-items-center">
+                        <MatchItem key={match._id || i} $isEven={i % 2 === 0}>
+                          <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center">
                             <div>
                               <h6 className="mb-2 fw-bold" style={{ color: '#10b981' }}>{match.skillName}</h6>
                               <div className="d-flex align-items-center">
-                                <div className="rounded-circle p-2 me-2" 
-                                  style={{ 
-                                    background: 'linear-gradient(135deg, #e6fff9, #d1ffe2)',
-                                    width: '40px', 
-                                    height: '40px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center'
-                                  }}>
+                                <IconCircle className="me-2" $gradient="linear-gradient(135deg, #e6fff9, #d1ffe2)">
                                   <PersonFill style={{ color: '#10b981' }} />
-                                </div>
+                                </IconCircle>
                                 <div>
                                   <span style={{ fontSize: '0.9rem' }}>{roleLabel}: <span className="fw-bold">{displayName}</span></span>
                                 </div>
                               </div>
                             </div>
-                            <div>
+                            <div className="mt-3 mt-sm-0">
                               <Badge 
                                 bg={match.status === 'accepted' ? 'success' : 'warning'}
                                 text={match.status === 'accepted' ? 'white' : 'dark'}
@@ -310,7 +327,7 @@ const OverviewTab = ({
                               </Badge>
                             </div>
                           </div>
-                        </div>
+                        </MatchItem>
                       );
                     })}
                   </div>
@@ -338,46 +355,25 @@ const OverviewTab = ({
                   </div>
                 )}
               </Card.Body>
-            </Card>
+            </StyledCard>
           </Col>
         </Row>
       </Col>
       <Col lg={4}>
-        <Card 
-          className="border-0 shadow-sm"
-          style={{
-            borderRadius: '1rem',
-            background: 'linear-gradient(to right bottom, #ffffff, #f0f4ff)',
-            transition: 'all 0.3s ease',
-            transform: hoveredCard === 'actions' ? 'translateY(-5px)' : 'none',
-            boxShadow: hoveredCard === 'actions' ? '0 15px 30px rgba(79, 70, 229, 0.1)' : '0 5px 15px rgba(0, 0, 0, 0.05)'
-          }}
+        <StyledCard 
+          $isHovered={hoveredCard === 'actions'}
+          $gradient="linear-gradient(to right bottom, #ffffff, #f0f4ff)"
           onMouseEnter={() => setHoveredCard('actions')}
           onMouseLeave={() => setHoveredCard(null)}
         >
-          <Card.Header 
-            className="text-white" 
-            style={{ 
-              borderRadius: '1rem 1rem 0 0',
-              background: 'linear-gradient(135deg, #4f46e5, #4338ca)',
-              border: 'none',
-              padding: '1.25rem'
-            }}
-          >
-            <h5 className="mb-0 fw-bold">Quick Actions</h5>
-          </Card.Header>
+          <CardHeader $gradient="linear-gradient(135deg, #4f46e5, #4338ca)">
+            <h5 className="mb-0 fw-bold text-white">Quick Actions</h5>
+          </CardHeader>
           <Card.Body className="p-4">
             <div className="d-grid gap-4">
-              <Button 
+              <ActionButton 
                 variant="outline-primary" 
-                className="d-flex justify-content-between align-items-center p-3"
-                style={{
-                  borderRadius: '1rem',
-                  border: '2px solid #e0e7ff',
-                  background: 'linear-gradient(to right, #ffffff, #f5f7ff)',
-                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
-                  transition: 'all 0.3s ease',
-                }}
+                className="d-flex justify-content-between align-items-center"
                 onClick={() => navigate('/profile')}
               >
                 <div className="d-flex align-items-center">
@@ -394,18 +390,11 @@ const OverviewTab = ({
                   <span className="fw-bold" style={{ fontSize: '1.05rem', color: '#4f46e5' }}>Add New Skills</span>
                 </div>
                 <ArrowRepeat style={{ color: '#4f46e5' }} size={22} />
-              </Button>
+              </ActionButton>
               
-              <Button 
+              <ActionButton 
                 variant="outline-primary" 
-                className="d-flex justify-content-between align-items-center p-3"
-                style={{
-                  borderRadius: '1rem',
-                  border: '2px solid #e0e7ff',
-                  background: 'linear-gradient(to right, #ffffff, #f5f7ff)',
-                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
-                  transition: 'all 0.3s ease',
-                }}
+                className="d-flex justify-content-between align-items-center"
                 onClick={() => navigate('/match/teaching-requests')}
               >
                 <div className="d-flex align-items-center">
@@ -422,18 +411,11 @@ const OverviewTab = ({
                   <span className="fw-bold" style={{ fontSize: '1.05rem', color: '#4f46e5' }}>Schedule a Session</span>
                 </div>
                 <ArrowRepeat style={{ color: '#4f46e5' }} size={22} />
-              </Button>
+              </ActionButton>
               
-              <Button 
+              <ActionButton 
                 variant="outline-primary" 
-                className="d-flex justify-content-between align-items-center p-3"
-                style={{
-                  borderRadius: '1rem',
-                  border: '2px solid #e0e7ff',
-                  background: 'linear-gradient(to right, #ffffff, #f5f7ff)',
-                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
-                  transition: 'all 0.3s ease',
-                }}
+                className="d-flex justify-content-between align-items-center"
                 onClick={() => navigate('/sessions')}
               >
                 <div className="d-flex align-items-center">
@@ -450,7 +432,7 @@ const OverviewTab = ({
                   <span className="fw-bold" style={{ fontSize: '1.05rem', color: '#4f46e5' }}>View Session History</span>
                 </div>
                 <ArrowRepeat style={{ color: '#4f46e5' }} size={22} />
-              </Button>
+              </ActionButton>
               
               <Button 
                 className="d-flex justify-content-between align-items-center p-3 mt-2"
@@ -494,7 +476,7 @@ const OverviewTab = ({
               </Button>
             </div>
           </Card.Body>
-        </Card>
+        </StyledCard>
       </Col>
     </Row>
   );

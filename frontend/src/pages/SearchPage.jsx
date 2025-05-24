@@ -98,6 +98,10 @@ const SearchPage = () => {
   const backButtonText = user ? 'Back to Dashboard' : 'Back to Home';
   const backButtonTarget = user ? '/dashboard' : '/';
   
+
+  const handleBackButtonClick = () => {
+  navigate(backButtonTarget, { replace: true });
+};
   // Before component renders, ensure apiConfig is initialized
   useEffect(() => {
     // Make sure apiConfig is initialized
@@ -148,7 +152,7 @@ const SearchPage = () => {
               onClick={() => navigate(backButtonTarget)}
             >
               <ArrowLeft className="me-2" />
-              <span>{backButtonText}</span>
+              <span onClick={handleBackButtonClick}>{backButtonText}</span>
             </Button>
           </div>
           

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, Button, Dropdown, Nav } from 'react-bootstrap';
 import { PersonFill, BoxArrowRight, ThreeDotsVertical, Globe } from 'react-bootstrap-icons';
 import NotificationCenter from '../NotificationCenter';
@@ -7,29 +7,44 @@ import styled, { keyframes } from 'styled-components';
 import { breakpoints } from '../../styles/breakpoints';
 import NavbarSearchDropdown from '../search/NavbarSearchDropdown';
 
-// Custom styled components
+// Performance optimized animations - using transform and opacity only
+const rotateGlobe = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
+
+const pulseGlow = keyframes`
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+`;
+
+// Mobile-optimized header container
 const ResponsiveHeader = styled(Card)`
+  border-radius: ${props => props.$isMobile ? '0.75rem' : '1rem'};
+  margin-bottom: ${props => props.$isMobile ? '0.75rem' : '1rem'};
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  
+  /* Reduce padding on mobile for compactness */
+  .card-body {
+    padding: ${props => props.$isMobile ? '0.75rem' : '1rem'};
+  }
+
   .header-content {
     flex-direction: row;
+    transition: transform 0.3s ease;
     
     @media (max-width: ${breakpoints.sm}px) {
       flex-direction: column;
-      gap: 1rem;
-    }
-  }
-
-  .title {
-    @media (max-width: ${breakpoints.sm}px) {
-      font-size: 1.5rem;
+      gap: 0.5rem;
     }
   }
 
   .desktop-actions {
     display: flex;
-    gap: 2px;
+    gap: 0.5rem;
     
     @media (max-width: ${breakpoints.md}px) {
-      display: none !important;
+      display: none;
     }
   }
 
@@ -37,122 +52,70 @@ const ResponsiveHeader = styled(Card)`
     display: none;
     
     @media (max-width: ${breakpoints.md}px) {
-      display: flex !important;
+      display: flex;
     }
   }
 
+  /* Optimized layout for search and notification area */
   .search-notification-container {
     display: flex;
     align-items: center;
+    gap: ${props => props.$isMobile ? '0.25rem' : '0.5rem'};
     
     @media (max-width: ${breakpoints.sm}px) {
       width: 100%;
-      justify-content: center;
+      justify-content: space-between;
     }
   }
 
   .right-container {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: ${props => props.$isMobile ? '0.5rem' : '1rem'};
     
     @media (max-width: ${breakpoints.sm}px) {
       width: 100%;
-      justify-content: center;
+      margin-top: 0.25rem;
     }
   }
   
+  /* Increase touch area for mobile */
   .search-icon-mobile {
-    @media (max-width: ${breakpoints.md}px) {
-      padding: 0.375rem 0.5rem;
+    padding: ${props => props.$isMobile ? '0.375rem 0.5rem' : '0.25rem 0.375rem'};
       
-      .dropdown-toggle::after {
-        display: none;
-      }
-    }
-  }
-  
-  /* Fix to ensure notification badges are visible */
-  .notification-badge {
-    z-index: 5;
-    position: relative;
-  }
-  
-  /* Override any potential z-index issues for notifications */
-  .notification-wrapper {
-    position: relative;
-    
-    /* Ensure any notification counter appears above other elements */
-    .badge,
-    .notification-counter {
-      z-index: 1000;
-      position: absolute;
-      top: -5px;
-      right: -5px;
+    .dropdown-toggle::after {
+      display: none;
     }
   }
 `;
 
-// Keyframes for the globe rotation
-const rotateGlobe = keyframes`
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-`;
-
-const pulseGlow = keyframes`
-  0% {
-    box-shadow: 0 0 5px 2px rgba(67, 97, 238, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 12px 4px rgba(76, 201, 240, 0.5);
-  }
-  100% {
-    box-shadow: 0 0 5px 2px rgba(67, 97, 238, 0.3);
-  }
-`;
-
-// Styled component for the revolving globe - Fixed prop passing
+// Mobile-optimized Globe - reduced animation complexity
 const RevolvingGlobe = styled.div`
-  margin-right: 12px;
+  margin-right: ${props => props.$isMobile ? '6px' : '12px'};
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #1e3a8a, #3b82f6);
   border-radius: 50%;
-  padding: 10px;
-  width: ${props => props.$isMobile ? '35px' : '42px'};
-  height: ${props => props.$isMobile ? '35px' : '42px'};
-  animation: ${rotateGlobe} 10s linear infinite, ${pulseGlow} 4s ease-in-out infinite;
-  position: relative;
-  overflow: hidden;
+  padding: ${props => props.$isMobile ? '8px' : '10px'};
+  width: ${props => props.$isMobile ? '32px' : '42px'};
+  height: ${props => props.$isMobile ? '32px' : '42px'};
   
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%);
-    border-radius: 50%;
-  }
+  /* Simplified animation for better mobile performance */
+  animation: ${rotateGlobe} ${props => props.$isMobile ? '15s' : '10s'} linear infinite;
+  will-change: transform;
+  
+  /* Simpler highlight effect without additional elements */
+  background-image: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.2) 0%, rgba(76, 130, 246, 0.8) 70%);
   
   svg {
     color: white;
-    height: ${props => props.$isMobile ? '18px' : '22px'};
-    width: ${props => props.$isMobile ? '18px' : '22px'};
-  }
-  
-  @media (max-width: ${breakpoints.sm}px) {
-    margin-right: 8px;
+    height: ${props => props.$isMobile ? '16px' : '22px'};
+    width: ${props => props.$isMobile ? '16px' : '22px'};
   }
 `;
 
-// Enhanced title with typing animation - NOW WITH BLACK TEXT
+// Simplified title component for mobile
 const EnhancedTitle = styled.div`
   margin-bottom: 0;
   
@@ -162,21 +125,23 @@ const EnhancedTitle = styled.div`
   }
   
   .main-title {
-    font-family: 'Space Grotesk', 'Orbitron', sans-serif;
+    /* Prioritize system fonts for better performance */
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-weight: 800;
-    letter-spacing: 1.5px;
-    font-size: ${props => props.$isMobile ? '1.4rem' : '1.8rem'};
-    color: #000000; /* Direct black color instead of gradient */
-    text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+    letter-spacing: ${props => props.$isMobile ? '1px' : '1.5px'};
+    font-size: ${props => props.$isMobile ? '1.2rem' : '1.8rem'};
+    color: #000000;
     position: relative;
     z-index: 1;
     text-transform: uppercase;
     margin: 0;
-    padding-bottom: 4px;
-    transition: all 0.3s ease;
+    padding-bottom: ${props => props.$isMobile ? '2px' : '4px'};
+    transition: transform 0.3s ease;
     white-space: nowrap;
+    will-change: transform;
   }
   
+  /* Simpler typing animation for mobile */
   .typing-text {
     position: relative;
     display: inline-block;
@@ -184,7 +149,7 @@ const EnhancedTitle = styled.div`
     &::after {
       content: '|';
       position: absolute;
-      right: -8px;
+      right: -6px;
       animation: blink-caret 0.75s step-end infinite;
       color: #4361ee;
       font-weight: 400;
@@ -192,163 +157,199 @@ const EnhancedTitle = styled.div`
   }
   
   @keyframes blink-caret {
-    from, to { opacity: 0; }
-    50% { opacity: 1; }
+    50% { opacity: 0; }
   }
   
+  /* Simplified accent bar */
   .title-accent {
     position: absolute;
     bottom: 0;
     left: 0;
-    height: 4px;
+    height: ${props => props.$isMobile ? '3px' : '4px'};
     width: 100%;
-    background: linear-gradient(90deg, #4361ee, #3a0ca3, #480ca8, #4cc9f0);
-    background-size: 300% 300%;
-    animation: gradient-shift 8s ease infinite;
+    background: #4361ee;
     border-radius: 2px;
     z-index: 0;
   }
   
-  .title-glow {
-    position: absolute;
-    bottom: -4px;
-    left: 25%;
-    width: 50%;
-    height: 12px;
-    background: radial-gradient(ellipse at center, rgba(76, 201, 240, 0.6) 0%, rgba(67, 97, 238, 0) 70%);
-    filter: blur(4px);
-    opacity: 0.7;
-    animation: glow-pulse 3s ease-in-out infinite alternate;
-  }
-  
   .subtitle {
-    font-family: 'Inter', sans-serif;
-    font-size: ${props => props.$isMobile ? '0.7rem' : '0.8rem'};
-    letter-spacing: 3px;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: ${props => props.$isMobile ? '0.65rem' : '0.8rem'};
+    letter-spacing: ${props => props.$isMobile ? '2px' : '3px'};
     text-transform: uppercase;
     color: #64748b;
     margin-top: 2px;
     opacity: 0.8;
     text-align: center;
-    animation: fade-in 1s ease-in;
-  }
-  
-  @keyframes gradient-shift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-  }
-  
-  @keyframes glow-pulse {
-    0% { opacity: 0.3; transform: translateX(-5px); }
-    100% { opacity: 0.7; transform: translateX(5px); }
-  }
-  
-  @keyframes fade-in {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 0.8; transform: translateY(0); }
-  }
-  
-  &:hover {
-    .main-title {
-      transform: translateY(-2px);
-      text-shadow: 0px 4px 8px rgba(0, 0, 0, 0.15);
-    }
-    
-    .title-accent {
-      height: 5px;
-      animation-duration: 4s;
-    }
-    
-    .title-glow {
-      opacity: 0.9;
-    }
+    display: ${props => props.$isMobile ? 'none' : 'block'};
   }
 `;
 
+// Mobile-friendly action buttons with bigger touch targets
 const ActionButton = styled(Button)`
-  border-radius: 8px;
-  transition: all 0.3s ease;
+  border-radius: ${props => props.$isMobile ? '6px' : '8px'};
+  transition: transform 0.3s ease;
   border: none;
-  padding: 0.5rem 1rem;
+  padding: ${props => props.$isMobile ? '0.5rem 0.75rem' : '0.5rem 1rem'};
+  will-change: transform;
+  min-height: ${props => props.$isMobile ? '40px' : 'auto'};
+  min-width: ${props => props.$isMobile ? '40px' : 'auto'};
+  display: flex;
+  align-items: center;
+  justify-content: center;
   
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Increase icon size for better touch targets */
+  svg {
+    width: ${props => props.$isMobile ? '18px' : '16px'};
+    height: ${props => props.$isMobile ? '18px' : '16px'};
   }
 `;
 
-// Styled wrapper for notification center to ensure badge visibility
+// Optimized notification wrapper with proper spacing
 const NotificationWrapper = styled.div`
   position: relative;
   z-index: 1;
+  min-width: ${props => props.$isMobile ? '36px' : 'auto'};
+  min-height: ${props => props.$isMobile ? '36px' : 'auto'};
   
-  /* This ensures any badges from NotificationCenter are visible */
-  .badge, 
-  [class*="badge"],
-  [class*="notification-badge"],
-  [class*="notification-counter"] {
+  .badge {
     position: absolute;
-    top: -8px;
-    right: -8px;
+    top: -6px;
+    right: -6px;
     z-index: 10;
+  }
+`;
+
+// Mobile optimized dropdown menu
+const MobileDropdownMenu = styled(Dropdown.Menu)`
+  padding: 0.5rem;
+  
+  .dropdown-item {
+    border-radius: 6px;
+    padding: 0.5rem;
+    margin-bottom: 0.25rem;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    &:active {
+      background-color: #f3f4f6;
+      color: inherit;
+    }
+  }
+`;
+
+const MobileDropdownToggle = styled(Dropdown.Toggle)`
+  padding: 0.5rem;
+  height: 40px;
+  width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &::after {
+    display: none;
+  }
+  
+  &:focus {
+    box-shadow: none;
   }
 `;
 
 const DashboardHeader = ({ handleLogout, navigate }) => {
   const { isMobile } = useResponsive();
   const [displayText, setDisplayText] = useState('');
-  const fullText = isMobile ? 'Skill Barter' : 'Skill Barter Platform';
+  
+  // Simplified text for mobile
+  const fullText = useMemo(() => 
+    isMobile ? 'Skill Barter' : 'Skill Barter Platform'
+  , [isMobile]);
+  
   const [showCursor, setShowCursor] = useState(true);
   
-  // Typing animation effect
-  useEffect(() => {
+  // Only run typing animation if not on low-end mobile devices
+  const isLowEndDevice = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      // Check for hardware concurrency as a proxy for device capability
+      return navigator.hardwareConcurrency <= 4;
+    }
+    return false;
+  }, []);
+  
+  // Optimized typing animation with reduced frequency for mobile
+  const handleTypingAnimation = useCallback(() => {
+    // Skip animation on low-end devices
+    if (isLowEndDevice) {
+      if (displayText !== fullText) {
+        setDisplayText(fullText);
+      }
+      return () => {};
+    }
+    
     if (displayText === fullText) {
-      // Text is fully typed, start blinking cursor for a moment
-      const timeout = setTimeout(() => {
-        setShowCursor(false);
-      }, 3000);
+      const timeout = setTimeout(() => setShowCursor(false), 3000);
       return () => clearTimeout(timeout);
     }
     
     const timeout = setTimeout(() => {
       setDisplayText(fullText.substring(0, displayText.length + 1));
-    }, 100); // Speed of typing
+    }, isMobile ? 150 : 100); // Slower on mobile
     
     return () => clearTimeout(timeout);
-  }, [displayText, fullText]);
-  
-  // Reset typing animation periodically
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setDisplayText('');
-      setShowCursor(true);
-    }, 10000); // Reset every 10 seconds
-    
-    return () => clearInterval(interval);
-  }, []);
+  }, [displayText, fullText, isMobile, isLowEndDevice]);
 
-  // Add font import to document head
   useEffect(() => {
+    return handleTypingAnimation();
+  }, [handleTypingAnimation]);
+  
+  // Less frequent animation reset on mobile
+  const resetAnimation = useCallback(() => {
+    // Skip animation reset on low-end devices
+    if (isLowEndDevice) return;
+    
+    setDisplayText('');
+    setShowCursor(true);
+  }, [isLowEndDevice]);
+
+  useEffect(() => {
+    // Less frequent animation on mobile to save battery
+    const interval = setInterval(resetAnimation, isMobile ? 15000 : 10000);
+    return () => clearInterval(interval);
+  }, [resetAnimation, isMobile]);
+
+  // Optimized font loading - load only if needed
+  useEffect(() => {
+    // Skip custom font loading on mobile to improve performance
+    if (isMobile) return;
+    
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap';
+    link.href = 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap';
+    link.async = true;
     document.head.appendChild(link);
     
     return () => {
-      document.head.removeChild(link);
+      if (link.parentNode) {
+        link.parentNode.removeChild(link);
+      }
     };
-  }, []);
+  }, [isMobile]);
 
-  const renderDesktopActions = () => (
+  // Memoized desktop actions
+  const renderDesktopActions = useMemo(() => (
     <div className="desktop-actions">
       <ActionButton 
         variant="primary" 
         className="d-flex align-items-center gap-2" 
         onClick={() => navigate('/profile')}
+        $isMobile={isMobile}
         style={{ 
-          background: 'linear-gradient(to right, #3b82f6, #1e40af)',
-          boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.3)'
+          background: 'linear-gradient(to right, #3b82f6, #1e40af)'
         }}
       >
         <PersonFill /> {!isMobile && 'Profile'}
@@ -357,30 +358,30 @@ const DashboardHeader = ({ handleLogout, navigate }) => {
         variant="danger" 
         className="d-flex align-items-center gap-2" 
         onClick={handleLogout}
+        $isMobile={isMobile}
         style={{ 
-          background: 'linear-gradient(to right, #ef4444, #b91c1c)',
-          boxShadow: '0 4px 6px -1px rgba(239, 68, 68, 0.3)'
+          background: 'linear-gradient(to right, #ef4444, #b91c1c)'
         }}
       >
         <BoxArrowRight /> {!isMobile && 'Logout'}
       </ActionButton>
     </div>
-  );
+  ), [isMobile, navigate, handleLogout]);
 
-  const renderMobileMenu = () => (
+  // Memoized mobile menu with better touch targets
+  const renderMobileMenu = useMemo(() => (
     <Dropdown align="end" className="mobile-menu">
-      <Dropdown.Toggle 
+      <MobileDropdownToggle 
         variant="light" 
         id="mobile-menu" 
         className="border-0 bg-transparent"
-        style={{ boxShadow: 'none' }}
       >
-        <ThreeDotsVertical size={24} />
-      </Dropdown.Toggle>
-      <Dropdown.Menu className="shadow-lg border-0 rounded-3">
+        <ThreeDotsVertical size={isMobile ? 22 : 20} />
+      </MobileDropdownToggle>
+      <MobileDropdownMenu className="shadow border-0">
         <Dropdown.Item 
           onClick={() => navigate('/profile')} 
-          className="d-flex align-items-center py-2"
+          className="d-flex align-items-center"
         >
           <div className="me-2 rounded-circle d-flex align-items-center justify-content-center" 
             style={{ 
@@ -395,7 +396,7 @@ const DashboardHeader = ({ handleLogout, navigate }) => {
         </Dropdown.Item>
         <Dropdown.Item 
           onClick={handleLogout} 
-          className="d-flex align-items-center py-2 text-danger"
+          className="d-flex align-items-center text-danger"
         >
           <div className="me-2 rounded-circle d-flex align-items-center justify-content-center" 
             style={{ 
@@ -408,12 +409,15 @@ const DashboardHeader = ({ handleLogout, navigate }) => {
           </div>
           <span>Logout</span>
         </Dropdown.Item>
-      </Dropdown.Menu>
+      </MobileDropdownMenu>
     </Dropdown>
-  );
+  ), [navigate, handleLogout, isMobile]);
 
   return (
-    <ResponsiveHeader className="mb-4 bg-gradient-primary shadow">
+    <ResponsiveHeader 
+      $isMobile={isMobile} 
+      className="bg-gradient-primary shadow"
+    >
       <Card.Body>
         <div className="d-flex justify-content-between align-items-center header-content">
           <div className="d-flex align-items-center">
@@ -424,12 +428,11 @@ const DashboardHeader = ({ handleLogout, navigate }) => {
             <EnhancedTitle $isMobile={isMobile}>
               <div className="title-container">
                 <h1 className="main-title">
-                  <span className={showCursor ? "typing-text" : ""}>
-                    {displayText}
+                  <span className={showCursor && !isLowEndDevice ? "typing-text" : ""}>
+                    {displayText || fullText} {/* Fallback to full text */}
                   </span>
                 </h1>
                 <div className="title-accent"></div>
-                <div className="title-glow"></div>
                 {!isMobile && <div className="subtitle">Exchange Expertise Globally</div>}
               </div>
             </EnhancedTitle>
@@ -437,16 +440,16 @@ const DashboardHeader = ({ handleLogout, navigate }) => {
           
           <div className="right-container">
             <div className="search-notification-container">
-              <Nav.Item className="mx-2 search-icon-mobile">
+              <Nav.Item className="search-icon-mobile">
                 <NavbarSearchDropdown />
               </Nav.Item>
-              <NotificationWrapper>
+              <NotificationWrapper $isMobile={isMobile}>
                 <NotificationCenter />
               </NotificationWrapper>
             </div>
             
-            {renderDesktopActions()}
-            {renderMobileMenu()}
+            {renderDesktopActions}
+            {renderMobileMenu}
           </div>
         </div>
       </Card.Body>
@@ -454,4 +457,8 @@ const DashboardHeader = ({ handleLogout, navigate }) => {
   );
 };
 
-export default DashboardHeader;
+// Use React.memo with a custom comparison function to prevent unnecessary re-renders
+export default React.memo(DashboardHeader, (prevProps, nextProps) => {
+  // Custom comparison to only re-render when necessary
+  return true; // Replace with actual comparison logic if needed
+});

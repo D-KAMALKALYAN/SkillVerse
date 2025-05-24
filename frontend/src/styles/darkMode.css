@@ -1,0 +1,130 @@
+/* Dark Mode CSS Variables */
+:root {
+  --primary: #4158D0;
+  --primary-hover: #3146B3;
+  --secondary: #C850C0;
+  --light: #f8f9fa;
+  --dark: #212529;
+  --white: #ffffff;
+  --black: #000000;
+  --gray: #6c757d;
+  --gray-dark: #343a40;
+  --gray-light: #dee2e6;
+  --body-bg: #ffffff;
+  --body-color: #212529;
+  --card-bg: #ffffff;
+  --card-border: #dee2e6;
+  --card-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
+  --navbar-bg: #ffffff;
+  --navbar-color: #212529;
+  --hero-gradient: linear-gradient(135deg, #4158D0 0%, #C850C0 46%, #FFCC70 100%);
+  --footer-bg: #212529;
+  --footer-color: #ffffff;
+  --transition: all 0.3s ease;
+}
+
+/* Dark Mode Theme */
+.dark-mode {
+  --primary: #60a5fa;
+  --primary-hover: #4287D6;
+  --secondary: #C850C0;
+  --light: #1e293b;
+  --dark: #f8f9fa;
+  --white: #0f172a;
+  --black: #ffffff;
+  --gray: #94a3b8;
+  --gray-dark: #cbd5e1;
+  --gray-light: #334155;
+  --body-bg: #0f172a;
+  --body-color: #e2e8f0;
+  --card-bg: #1e293b;
+  --card-border: #334155;
+  --card-shadow: 0 .5rem 1rem rgba(0,0,0,.5);
+  --navbar-bg: #0f172a;
+  --navbar-color: #e2e8f0;
+  --hero-gradient: linear-gradient(135deg, #1e3a8a 0%, #701a75 46%, #b45309 100%);
+  --footer-bg: #020617;
+  --footer-color: #e2e8f0;
+}
+
+/* Apply variables to elements */
+body {
+  background-color: var(--body-bg);
+  color: var(--body-color);
+  transition: var(--transition);
+}
+
+.navbar {
+  background-color: var(--navbar-bg) !important;
+  transition: var(--transition);
+}
+
+.navbar .navbar-brand, 
+.navbar .nav-link {
+  color: var(--navbar-color) !important;
+  transition: var(--transition);
+}
+
+.hero-section {
+  background: var(--hero-gradient) !important;
+  transition: var(--transition);
+}
+
+.card {
+  background-color: var(--card-bg) !important;
+  border-color: var(--card-border) !important;
+  transition: var(--transition);
+}
+
+.bg-light {
+  background-color: var(--light) !important;
+  transition: var(--transition);
+}
+
+.bg-dark {
+  background-color: var(--dark) !important;
+  transition: var(--transition);
+}
+
+.bg-white {
+  background-color: var(--white) !important;
+  transition: var(--transition);
+}
+
+.text-white {
+  color: var(--white) !important;
+  transition: var(--transition);
+}
+
+.text-dark {
+  color: var(--dark) !important;
+  transition: var(--transition);
+}
+
+.text-muted {
+  color: var(--gray) !important;
+  transition: var(--transition);
+}
+
+footer {
+  background-color: var(--footer-bg) !important;
+  color: var(--footer-color) !important;
+  transition: var(--transition);
+}
+
+/* Special styling for the back-to-top button in dark mode */
+.dark-mode .btn-primary {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  transition: var(--transition);
+}
+
+.dark-mode .btn-primary:hover {
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+/* Smooth transition for all elements */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
