@@ -39,23 +39,25 @@ const SessionsList = () => {
     
     try {
       setLoading(true);
-      const response = await fetch(`${BACKEND_URL}/api/sessions`, {
+      setError(null); // Reset error state
+      
+      const response = await apiClient.get('/sessions', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch sessions');
+      if (response.data && response.data.sessions) {
+        setSessions(response.data.sessions);
+      } else {
+        throw new Error('Invalid response format');
       }
-      
-      const data = await response.json();
-      setSessions(data.sessions);
       
     } catch (err) {
       console.error('Error fetching sessions:', err);
-      setError('Failed to load sessions. Please try again.');
-      toast.error('Error loading sessions');
+      const errorMessage = err.response?.data?.message || 'Failed to load sessions. Please try again.';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

@@ -1,42 +1,60 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Button, Dropdown } from 'react-bootstrap';
-import { PersonFill, BoxArrowRight, ThreeDotsVertical, Gear } from 'react-bootstrap-icons';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Card, Button, Dropdown, Nav } from 'react-bootstrap';
+import { PersonFill, BoxArrowRight, ThreeDotsVertical, Globe } from 'react-bootstrap-icons';
 import NotificationCenter from '../../NotificationCenter';
 import styled, { keyframes } from 'styled-components';
+import { breakpoints } from '../../../styles/breakpoints';
+import useResponsive from '../../../hooks/useResponsive';
 
-// Define breakpoints directly in this file to avoid the import error
-const breakpoints = {
-  xs: 0,
-  sm: 576,
-  md: 768,
-  lg: 992,
-  xl: 1200,
-  xxl: 1400
-};
+// Performance optimized animations
+const rotateGlobe = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
 
-// Custom styled components
+// Mobile-optimized header container
 const ResponsiveHeader = styled(Card)`
+  border-radius: ${props => props.$isMobile ? '0.75rem' : '1rem'};
+  margin-bottom: ${props => props.$isMobile ? '0.75rem' : '1rem'};
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  
+  .card-body {
+    padding: ${props => props.$isMobile ? '0.75rem' : '1rem'};
+  }
+
   .header-content {
-    flex-direction: row;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 1rem;
     
     @media (max-width: ${breakpoints.sm}px) {
-      flex-direction: column;
-      gap: 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
     }
   }
 
-  .title {
-    @media (max-width: ${breakpoints.sm}px) {
-      font-size: 1.5rem;
-    }
+  .left-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 0; // Prevent flex item from growing beyond container
+  }
+
+  .right-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-shrink: 0; // Prevent shrinking
   }
 
   .desktop-actions {
     display: flex;
-    gap: 2px;
+    gap: 0.5rem;
     
     @media (max-width: ${breakpoints.md}px) {
-      display: none !important;
+      display: none;
     }
   }
 
@@ -44,86 +62,42 @@ const ResponsiveHeader = styled(Card)`
     display: none;
     
     @media (max-width: ${breakpoints.md}px) {
-      display: flex !important;
+      display: flex;
     }
   }
 
-  .right-container {
+  .search-notification-container {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    
-    @media (max-width: ${breakpoints.sm}px) {
-      width: 100%;
-      justify-content: center;
-    }
-  }
-  
-  .notification-wrapper {
-    position: relative;
-    
-    :global(.badge),
-    :global(.notification-counter) {
-      z-index: 1000;
-      position: absolute;
-      top: -5px;
-      right: -5px;
-    }
+    gap: 0.5rem;
   }
 `;
 
-const pulseGlow = keyframes`
-  0% {
-    box-shadow: 0 0 5px 2px rgba(67, 97, 238, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 12px 4px rgba(76, 201, 240, 0.5);
-  }
-  100% {
-    box-shadow: 0 0 5px 2px rgba(67, 97, 238, 0.3);
-  }
-`;
-
-// Styled icon container
-const IconContainer = styled.div`
-  margin-right: 12px;
+// Optimized Globe component
+const RevolvingGlobe = styled.div`
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #1e3a8a, #3b82f6);
   border-radius: 50%;
-  padding: 10px;
-  width: ${props => props.isMobile ? '35px' : '42px'};
-  height: ${props => props.isMobile ? '35px' : '42px'};
-  animation: ${pulseGlow} 4s ease-in-out infinite;
-  position: relative;
-  overflow: hidden;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%);
-    border-radius: 50%;
-  }
+  padding: ${props => props.$isMobile ? '8px' : '10px'};
+  width: ${props => props.$isMobile ? '32px' : '42px'};
+  height: ${props => props.$isMobile ? '32px' : '42px'};
+  animation: ${rotateGlobe} 10s linear infinite;
+  will-change: transform;
   
   svg {
     color: white;
-    height: ${props => props.isMobile ? '18px' : '22px'};
-    width: ${props => props.isMobile ? '18px' : '22px'};
-  }
-  
-  @media (max-width: ${breakpoints.sm}px) {
-    margin-right: 8px;
+    height: ${props => props.$isMobile ? '16px' : '22px'};
+    width: ${props => props.$isMobile ? '16px' : '22px'};
   }
 `;
 
-// Enhanced title
+// Optimized title component
 const EnhancedTitle = styled.div`
-  margin-bottom: 0;
+  min-width: 0; // Prevent text overflow
+  flex: 1;
   
   .title-container {
     position: relative;
@@ -131,168 +105,161 @@ const EnhancedTitle = styled.div`
   }
   
   .main-title {
-    font-family: 'Space Grotesk', sans-serif;
-    font-weight: 700;
-    letter-spacing: 1px;
-    font-size: ${props => props.isMobile ? '1.4rem' : '1.7rem'};
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-weight: 800;
+    font-size: ${props => props.$isMobile ? '1.2rem' : '1.8rem'};
     color: #000000;
-    text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
-    position: relative;
-    z-index: 1;
     margin: 0;
-    padding-bottom: 4px;
-    transition: all 0.3s ease;
     white-space: nowrap;
-  }
-  
-  .title-accent {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    height: 4px;
-    width: 100%;
-    background: linear-gradient(90deg, #4361ee, #3a0ca3, #480ca8, #4cc9f0);
-    background-size: 300% 300%;
-    animation: gradient-shift 8s ease infinite;
-    border-radius: 2px;
-    z-index: 0;
-  }
-  
-  .title-glow {
-    position: absolute;
-    bottom: -4px;
-    left: 25%;
-    width: 50%;
-    height: 12px;
-    background: radial-gradient(ellipse at center, rgba(76, 201, 240, 0.6) 0%, rgba(67, 97, 238, 0) 70%);
-    filter: blur(4px);
-    opacity: 0.7;
-    animation: glow-pulse 3s ease-in-out infinite alternate;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .subtitle {
-    font-family: 'Inter', sans-serif;
-    font-size: ${props => props.isMobile ? '0.7rem' : '0.8rem'};
-    letter-spacing: 2px;
-    text-transform: uppercase;
+    font-size: ${props => props.$isMobile ? '0.65rem' : '0.8rem'};
     color: #64748b;
     margin-top: 2px;
-    opacity: 0.8;
-  }
-  
-  @keyframes gradient-shift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-  }
-  
-  @keyframes glow-pulse {
-    0% { opacity: 0.3; transform: translateX(-5px); }
-    100% { opacity: 0.7; transform: translateX(5px); }
-  }
-  
-  &:hover {
-    .main-title {
-      transform: translateY(-2px);
-      text-shadow: 0px 4px 8px rgba(0, 0, 0, 0.15);
-    }
-    
-    .title-accent {
-      height: 5px;
-      animation-duration: 4s;
-    }
-    
-    .title-glow {
-      opacity: 0.9;
-    }
+    display: ${props => props.$isMobile ? 'none' : 'block'};
   }
 `;
 
+// Optimized action buttons
 const ActionButton = styled(Button)`
   border-radius: 8px;
-  transition: all 0.3s ease;
+  transition: transform 0.2s ease;
   border: none;
   padding: 0.5rem 1rem;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  svg {
+    width: 16px;
+    height: 16px;
   }
 `;
 
-// Styled wrapper for notification center to ensure badge visibility
+// Optimized notification wrapper
 const NotificationWrapper = styled.div`
   position: relative;
   z-index: 1;
+  min-width: 36px;
+  min-height: 36px;
+`;
+
+// Optimized mobile menu
+const MobileDropdownMenu = styled(Dropdown.Menu)`
+  padding: 0.5rem;
+  min-width: 200px;
   
-  && {
-    .badge, 
-    [class*="badge"],
-    [class*="notification-badge"],
-    [class*="notification-counter"] {
-      position: absolute;
-      top: -8px;
-      right: -8px;
-      z-index: 10;
+  .dropdown-item {
+    border-radius: 6px;
+    padding: 0.5rem;
+    margin-bottom: 0.25rem;
+    
+    &:last-child {
+      margin-bottom: 0;
     }
+  }
+`;
+
+const MobileDropdownToggle = styled(Dropdown.Toggle)`
+  padding: 0.5rem;
+  height: 40px;
+  width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &::after {
+    display: none;
   }
 `;
 
 const Header = ({ logout }) => {
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const { isMobile } = useResponsive();
+  const [displayText, setDisplayText] = useState('');
   
-  // Add responsiveness
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+  const fullText = useMemo(() => 
+    isMobile ? 'Profile' : 'Profile Management'
+  , [isMobile]);
+  
+  const [showCursor, setShowCursor] = useState(true);
+  
+  const isLowEndDevice = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      return navigator.hardwareConcurrency <= 4;
+    }
+    return false;
   }, []);
-
-  // Add font import to document head
-  useEffect(() => {
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap';
-    document.head.appendChild(link);
+  
+  const handleTypingAnimation = useCallback(() => {
+    if (isLowEndDevice) {
+      if (displayText !== fullText) {
+        setDisplayText(fullText);
+      }
+      return () => {};
+    }
     
-    return () => {
-      document.head.removeChild(link);
-    };
-  }, []);
+    if (displayText === fullText) {
+      const timeout = setTimeout(() => setShowCursor(false), 3000);
+      return () => clearTimeout(timeout);
+    }
+    
+    const timeout = setTimeout(() => {
+      setDisplayText(fullText.substring(0, displayText.length + 1));
+    }, isMobile ? 150 : 100);
+    
+    return () => clearTimeout(timeout);
+  }, [displayText, fullText, isMobile, isLowEndDevice]);
 
-  const renderDesktopActions = () => (
+  useEffect(() => {
+    return handleTypingAnimation();
+  }, [handleTypingAnimation]);
+  
+  const resetAnimation = useCallback(() => {
+    if (isLowEndDevice) return;
+    setDisplayText('');
+    setShowCursor(true);
+  }, [isLowEndDevice]);
+
+  useEffect(() => {
+    const interval = setInterval(resetAnimation, isMobile ? 15000 : 10000);
+    return () => clearInterval(interval);
+  }, [resetAnimation, isMobile]);
+
+  const renderDesktopActions = useMemo(() => (
     <div className="desktop-actions">
       <ActionButton 
         variant="danger" 
-        className="d-flex align-items-center gap-2" 
         onClick={logout}
         style={{ 
-          background: 'linear-gradient(to right, #ef4444, #b91c1c)',
-          boxShadow: '0 4px 6px -1px rgba(239, 68, 68, 0.3)'
+          background: 'linear-gradient(to right, #ef4444, #b91c1c)'
         }}
       >
-        <BoxArrowRight /> Logout
+        <BoxArrowRight /> {!isMobile && 'Logout'}
       </ActionButton>
     </div>
-  );
+  ), [isMobile, logout]);
 
-  const renderMobileMenu = () => (
+  const renderMobileMenu = useMemo(() => (
     <Dropdown align="end" className="mobile-menu">
-      <Dropdown.Toggle 
+      <MobileDropdownToggle 
         variant="light" 
         id="mobile-menu" 
         className="border-0 bg-transparent"
-        style={{ boxShadow: 'none' }}
       >
-        <ThreeDotsVertical size={24} />
-      </Dropdown.Toggle>
-      <Dropdown.Menu className="shadow-lg border-0 rounded-3">
+        <ThreeDotsVertical size={20} />
+      </MobileDropdownToggle>
+      <MobileDropdownMenu className="shadow border-0">
         <Dropdown.Item 
           onClick={logout} 
-          className="d-flex align-items-center py-2 text-danger"
+          className="d-flex align-items-center"
         >
           <div className="me-2 rounded-circle d-flex align-items-center justify-content-center" 
             style={{ 
@@ -305,38 +272,41 @@ const Header = ({ logout }) => {
           </div>
           <span>Logout</span>
         </Dropdown.Item>
-      </Dropdown.Menu>
+      </MobileDropdownMenu>
     </Dropdown>
-  );
+  ), [logout]);
 
   return (
-    <ResponsiveHeader className="mb-4 bg-gradient-primary shadow">
+    <ResponsiveHeader 
+      $isMobile={isMobile} 
+      className="bg-gradient-primary shadow"
+    >
       <Card.Body>
-        <div className="d-flex justify-content-between align-items-center header-content">
-          <div className="d-flex align-items-center">
-            <IconContainer isMobile={isMobile}>
-              <Gear />
-            </IconContainer>
+        <div className="header-content">
+          <div className="left-section">
+            <RevolvingGlobe $isMobile={isMobile}>
+              <Globe />
+            </RevolvingGlobe>
             
-            <EnhancedTitle isMobile={isMobile}>
+            <EnhancedTitle $isMobile={isMobile}>
               <div className="title-container">
                 <h1 className="main-title">
-                  Profile Management
+                  {displayText || fullText}
                 </h1>
-                <div className="title-accent"></div>
-                <div className="title-glow"></div>
                 {!isMobile && <div className="subtitle">Manage your account settings</div>}
               </div>
             </EnhancedTitle>
           </div>
           
-          <div className="right-container">
-            <NotificationWrapper>
-              <NotificationCenter />
-            </NotificationWrapper>
+          <div className="right-section">
+            <div className="search-notification-container">
+              <NotificationWrapper>
+                <NotificationCenter />
+              </NotificationWrapper>
+            </div>
             
-            {renderDesktopActions()}
-            {renderMobileMenu()}
+            {renderDesktopActions}
+            {renderMobileMenu}
           </div>
         </div>
       </Card.Body>
@@ -344,4 +314,4 @@ const Header = ({ logout }) => {
   );
 };
 
-export default Header;
+export default React.memo(Header);

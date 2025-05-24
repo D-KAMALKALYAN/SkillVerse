@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Form, InputGroup, Button, Dropdown } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import useResponsive from '../../hooks/useResponsive';
@@ -22,6 +22,14 @@ const NavbarSearchDropdown = () => {
   const navigate = useNavigate();
   const { isMobile } = useResponsive();
 
+  // Memoize skill level options
+  const skillLevels = React.useMemo(() => [
+    { value: '', label: 'All Levels', icon: null },
+    { value: 'Beginner', label: 'Beginner', icon: <HiOutlineLightningBolt className="text-info" /> },
+    { value: 'Intermediate', label: 'Intermediate', icon: <HiOutlineSparkles className="text-warning" /> },
+    { value: 'Expert', label: 'Expert', icon: <HiOutlineChip className="text-danger" /> }
+  ], []);
+
   // Trigger initial animation
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -41,24 +49,23 @@ const NavbarSearchDropdown = () => {
     }
   }, [isActive]);
 
-  const handleChange = (e) => {
+  // Memoize handlers
+  const handleChange = useCallback((e) => {
     const { name, value } = e.target;
     setSearchParams(prev => ({
       ...prev,
       [name]: value
     }));
     
-    // Briefly activate pulse effect when typing
     if (name === 'query' && value.length > 0) {
       setPulseEffect(true);
       setTimeout(() => setPulseEffect(false), 800);
     }
-  };
+  }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = useCallback((e) => {
     e.preventDefault();
     
-    // Create query string
     const queryParams = new URLSearchParams();
     
     if (searchParams.query) {
@@ -69,22 +76,15 @@ const NavbarSearchDropdown = () => {
       queryParams.append('skillLevel', searchParams.skillLevel);
     }
     
-    // Navigate to search page with search parameters
     navigate(`/search?${queryParams.toString()}`);
-  };
+  }, [searchParams, navigate]);
 
-  const getSkillLevelIcon = (level) => {
-    switch(level) {
-      case 'Beginner': 
-        return <HiOutlineLightningBolt className="text-info" />;
-      case 'Intermediate': 
-        return <HiOutlineSparkles className="text-warning" />;
-      case 'Expert': 
-        return <HiOutlineChip className="text-danger" />;
-      default: 
-        return null;
-    }
-  };
+  const handleSkillLevelSelect = useCallback((level) => {
+    setSearchParams(prev => ({
+      ...prev,
+      skillLevel: level
+    }));
+  }, []);
 
   return (
     <Dropdown 
@@ -101,15 +101,18 @@ const NavbarSearchDropdown = () => {
         id="dropdown-search"
         className={`futuristic-search-toggle d-flex align-items-center justify-content-center position-relative ${pulseEffect ? 'pulse-animation' : ''}`}
         style={{
-          borderRadius: '14px',
+          borderRadius: '16px',
           height: isMobile ? '40px' : '42px',
           padding: isMobile ? '0 12px' : '0 18px',
-          border: '1px solid rgba(99, 179, 237, 0.4)',
+          border: '1px solid rgba(59, 130, 246, 0.3)',
           background: isActive 
-            ? 'linear-gradient(145deg, rgba(25, 30, 45, 0.95), rgba(45, 55, 80, 0.9))' 
-            : 'linear-gradient(145deg, rgba(30, 35, 50, 0.8), rgba(50, 60, 85, 0.75))',
-          backdropFilter: 'blur(8px)',
-          transition: 'all 0.3s ease'
+            ? 'linear-gradient(145deg, #ffffff, #f8fafc)' 
+            : 'linear-gradient(145deg, #ffffff, #f1f5f9)',
+          backdropFilter: 'blur(10px)',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          boxShadow: isActive 
+            ? '0 0 20px rgba(59, 130, 246, 0.15)' 
+            : '0 0 10px rgba(59, 130, 246, 0.1)'
         }}
       >
         <div className="search-icon-wrapper position-relative">
@@ -117,13 +120,12 @@ const NavbarSearchDropdown = () => {
             className={`search-icon ${isMobile ? "" : "me-2"}`} 
             size={isMobile ? 18 : 20}
             style={{
-              color: 'rgba(138, 220, 255, 0.9)',
-              filter: showGlow ? 'drop-shadow(0 0 3px rgba(138, 220, 255, 0.8))' : 'none',
-              transition: 'all 0.3s ease'
+              color: 'rgba(59, 130, 246, 0.95)',
+              filter: showGlow ? 'drop-shadow(0 0 5px rgba(59, 130, 246, 0.5))' : 'none',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
             }}
           />
           
-          {/* Animated ring around icon */}
           <div className="rings-container position-absolute">
             <div className={`ring ring-1 ${isActive ? 'active' : ''}`}></div>
             <div className={`ring ring-2 ${isActive ? 'active' : ''}`}></div>
@@ -134,18 +136,18 @@ const NavbarSearchDropdown = () => {
           <span 
             className="search-text"
             style={{
-              color: 'rgba(240, 245, 255, 0.9)',
+              color: 'rgba(15, 23, 42, 0.95)',
               fontWeight: '500',
               fontSize: '0.95rem',
               letterSpacing: '0.3px',
-              textShadow: showGlow ? '0 0 5px rgba(138, 220, 255, 0.5)' : 'none'
+              textShadow: showGlow ? '0 0 8px rgba(59, 130, 246, 0.3)' : 'none',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
             }}
           >
             Discover Skills
           </span>
         )}
         
-        {/* Highlight/glow effect */}
         {showGlow && (
           <div 
             className="position-absolute glow-effect"
@@ -154,60 +156,64 @@ const NavbarSearchDropdown = () => {
               left: 0,
               right: 0,
               bottom: 0,
-              borderRadius: '14px',
-              boxShadow: '0 0 15px 1px rgba(99, 179, 237, 0.5), 0 0 0 1px rgba(99, 179, 237, 0.3) inset',
-              opacity: 0.7,
-              pointerEvents: 'none'
+              borderRadius: '16px',
+              boxShadow: '0 0 20px 2px rgba(59, 130, 246, 0.3), 0 0 0 1px rgba(59, 130, 246, 0.2) inset',
+              opacity: 0.8,
+              pointerEvents: 'none',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
             }}
-          ></div>
+          />
         )}
       </Dropdown.Toggle>
 
       <Dropdown.Menu 
         className="futuristic-search-menu p-0 border-0"
         style={{ 
-          width: isMobile ? '95vw' : '350px',
-          maxWidth: isMobile ? '95vw' : '350px',
-          background: 'linear-gradient(135deg, rgba(23, 32, 45, 0.95), rgba(35, 45, 65, 0.98))',
-          backdropFilter: 'blur(10px)',
-          borderRadius: '14px',
+          width: isMobile ? '95vw' : '380px',
+          maxWidth: isMobile ? '95vw' : '380px',
+          background: 'linear-gradient(135deg, #ffffff, #f8fafc)',
+          backdropFilter: 'blur(12px)',
+          borderRadius: '16px',
           overflow: 'hidden',
-          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(99, 179, 237, 0.2)',
-          marginTop: '10px',
-          border: '1px solid rgba(99, 179, 237, 0.25)'
+          boxShadow: '0 15px 35px -5px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(59, 130, 246, 0.2)',
+          marginTop: '12px',
+          border: '1px solid rgba(59, 130, 246, 0.2)',
+          transform: 'translateY(0)',
+          opacity: 1,
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
         }}
         popperConfig={{
           modifiers: [
             {
               name: 'offset',
               options: {
-                offset: [0, 8],
+                offset: [0, 10],
               },
             },
           ],
         }}
       >
-        <div className="futuristic-search-content p-3">
+        <div className="futuristic-search-content p-4">
           <div 
-            className="search-header mb-3 position-relative" 
+            className="search-header mb-4 position-relative" 
             style={{
-              borderBottom: '1px solid rgba(99, 179, 237, 0.2)',
-              paddingBottom: '10px',
+              borderBottom: '1px solid rgba(59, 130, 246, 0.2)',
+              paddingBottom: '12px',
             }}
           >
             <h6 
               className="m-0 d-flex align-items-center"
               style={{
-                color: 'rgba(138, 220, 255, 0.9)',
+                color: 'rgba(15, 23, 42, 0.95)',
                 fontWeight: '600',
-                fontSize: '1rem',
+                fontSize: '1.1rem',
                 letterSpacing: '0.5px'
               }}
             >
               <HiOutlineAdjustments 
-                size={18} 
+                size={20} 
                 className="me-2" 
-                style={{ color: 'rgba(138, 220, 255, 0.9)' }}
+                style={{ color: 'rgba(59, 130, 246, 0.95)' }}
               />
               Advanced Search
             </h6>
@@ -217,21 +223,21 @@ const NavbarSearchDropdown = () => {
                 position: 'absolute',
                 bottom: '-1px',
                 left: '0',
-                width: '35%',
+                width: '40%',
                 height: '2px',
-                background: 'linear-gradient(to right, rgba(99, 179, 237, 0.9), rgba(99, 179, 237, 0.1))'
+                background: 'linear-gradient(to right, rgba(59, 130, 246, 0.95), rgba(59, 130, 246, 0.1))'
               }}
-            ></div>
+            />
           </div>
           
           <Form onSubmit={handleSubmit} className="neo-form">
             <InputGroup 
-              className="mb-3 search-input-group"
+              className="mb-4 search-input-group"
               style={{
-                background: 'rgba(15, 23, 35, 0.4)',
-                borderRadius: '12px',
+                background: '#f8fafc',
+                borderRadius: '14px',
                 overflow: 'hidden',
-                boxShadow: '0 0 0 1px rgba(99, 179, 237, 0.2) inset, 0 4px 8px rgba(0, 0, 0, 0.1) inset'
+                boxShadow: '0 0 0 1px rgba(59, 130, 246, 0.2) inset, 0 4px 12px rgba(0, 0, 0, 0.05) inset'
               }}
             >
               <InputGroup.Text 
@@ -239,12 +245,12 @@ const NavbarSearchDropdown = () => {
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  padding: '0 0 0 12px'
+                  padding: '0 0 0 16px'
                 }}
               >
                 <HiOutlineSearch 
                   size={20} 
-                  style={{ color: 'rgba(138, 220, 255, 0.9)' }}
+                  style={{ color: 'rgba(59, 130, 246, 0.95)' }}
                 />
               </InputGroup.Text>
               <Form.Control
@@ -257,76 +263,72 @@ const NavbarSearchDropdown = () => {
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: 'rgba(240, 245, 255, 0.9)',
-                  padding: '12px 15px',
-                  fontSize: '0.95rem',
-                  boxShadow: 'none'
+                  color: 'rgba(15, 23, 42, 0.95)',
+                  padding: '14px 16px',
+                  fontSize: '1rem',
+                  boxShadow: 'none',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
                 }}
                 className="futuristic-input"
               />
             </InputGroup>
 
             <Form.Group 
-              className="mb-3 skill-level-group"
+              className="mb-4 skill-level-group"
               style={{
-                background: 'rgba(15, 23, 35, 0.4)',
-                borderRadius: '12px',
-                padding: '12px',
-                boxShadow: '0 0 0 1px rgba(99, 179, 237, 0.2) inset, 0 4px 8px rgba(0, 0, 0, 0.1) inset'
+                background: '#f8fafc',
+                borderRadius: '14px',
+                padding: '16px',
+                boxShadow: '0 0 0 1px rgba(59, 130, 246, 0.2) inset, 0 4px 12px rgba(0, 0, 0, 0.05) inset'
               }}
             >
               <Form.Label 
-                className="d-flex align-items-center mb-2"
+                className="d-flex align-items-center mb-3"
                 style={{
-                  color: 'rgba(138, 220, 255, 0.9)',
+                  color: 'rgba(15, 23, 42, 0.95)',
                   fontWeight: '500',
-                  fontSize: '0.85rem',
+                  fontSize: '0.9rem',
                   letterSpacing: '0.5px'
                 }}
               >
-                <HiOutlineLightningBolt size={16} className="me-2" />
+                <HiOutlineLightningBolt size={18} className="me-2" style={{ color: 'rgba(59, 130, 246, 0.95)' }} />
                 Skill Level
               </Form.Label>
               
               <div 
-                className="skill-level-options d-flex flex-wrap gap-2"
+                className="skill-level-options d-flex flex-wrap gap-3"
                 style={{
-                  marginTop: '5px'
+                  marginTop: '8px'
                 }}
               >
-                {['', 'Beginner', 'Intermediate', 'Expert'].map((level) => (
+                {skillLevels.map(({ value, label, icon }) => (
                   <Button
-                    key={level || 'all'}
+                    key={value || 'all'}
                     variant="transparent"
-                    className={`skill-level-btn d-flex align-items-center ${searchParams.skillLevel === level ? 'active' : ''}`}
+                    className={`skill-level-btn d-flex align-items-center ${searchParams.skillLevel === value ? 'active' : ''}`}
                     style={{
-                      background: searchParams.skillLevel === level 
-                        ? 'rgba(99, 179, 237, 0.25)' 
-                        : 'rgba(30, 40, 60, 0.4)',
-                      color: searchParams.skillLevel === level 
-                        ? 'rgba(240, 245, 255, 0.95)' 
-                        : 'rgba(240, 245, 255, 0.6)',
-                      border: `1px solid ${searchParams.skillLevel === level 
-                        ? 'rgba(99, 179, 237, 0.5)' 
-                        : 'rgba(99, 179, 237, 0.2)'}`,
-                      borderRadius: '10px',
-                      padding: '5px 12px',
-                      fontSize: '0.8rem',
+                      background: searchParams.skillLevel === value 
+                        ? 'rgba(59, 130, 246, 0.1)' 
+                        : '#ffffff',
+                      color: searchParams.skillLevel === value 
+                        ? 'rgba(15, 23, 42, 0.95)' 
+                        : 'rgba(15, 23, 42, 0.7)',
+                      border: `1px solid ${searchParams.skillLevel === value 
+                        ? 'rgba(59, 130, 246, 0.4)' 
+                        : 'rgba(59, 130, 246, 0.2)'}`,
+                      borderRadius: '12px',
+                      padding: '8px 16px',
+                      fontSize: '0.85rem',
                       fontWeight: '500',
-                      transition: 'all 0.2s ease',
-                      boxShadow: searchParams.skillLevel === level 
-                        ? '0 0 8px rgba(99, 179, 237, 0.3)' 
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      boxShadow: searchParams.skillLevel === value 
+                        ? '0 0 12px rgba(59, 130, 246, 0.2)' 
                         : 'none'
                     }}
-                    onClick={() => {
-                      setSearchParams(prev => ({
-                        ...prev,
-                        skillLevel: level
-                      }));
-                    }}
+                    onClick={() => handleSkillLevelSelect(value)}
                   >
-                    {level === '' ? 'All Levels' : level}
-                    {getSkillLevelIcon(level)}
+                    {label}
+                    {icon && <span className="ms-2">{icon}</span>}
                   </Button>
                 ))}
               </div>
@@ -337,29 +339,31 @@ const NavbarSearchDropdown = () => {
               type="submit" 
               className="w-100 search-submit-btn"
               style={{
-                background: 'linear-gradient(135deg, #3182CE, #2C5282)',
+                background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
                 border: 'none',
-                borderRadius: '12px',
-                padding: '10px',
+                borderRadius: '14px',
+                padding: '12px',
                 fontWeight: '600',
                 letterSpacing: '0.5px',
-                boxShadow: '0 4px 12px rgba(49, 130, 206, 0.3)',
+                boxShadow: '0 4px 15px rgba(59, 130, 246, 0.2)',
                 position: 'relative',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
               }}
             >
               <span 
                 className="d-flex align-items-center justify-content-center gap-2"
                 style={{
                   position: 'relative',
-                  zIndex: 2
+                  zIndex: 2,
+                  fontSize: '1rem',
+                  color: '#ffffff'
                 }}
               >
-                <HiOutlineSearch size={18} />
+                <HiOutlineSearch size={20} />
                 Search
               </span>
               
-              {/* Button inner glow effect */}
               <div 
                 className="button-glow"
                 style={{
@@ -368,21 +372,22 @@ const NavbarSearchDropdown = () => {
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  background: 'radial-gradient(circle at center, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%)',
-                  opacity: 0.7,
-                  zIndex: 1
+                  background: 'radial-gradient(circle at center, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 70%)',
+                  opacity: 0.8,
+                  zIndex: 1,
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
                 }}
-              ></div>
+              />
             </Button>
           </Form>
         </div>
       </Dropdown.Menu>
 
-      <style data-jsx="true">{`
-        /* Futuristic component styling */
+      <style jsx="true">{`
         .futuristic-search-toggle:hover {
-          border-color: rgba(99, 179, 237, 0.6) !important;
-          box-shadow: 0 0 15px rgba(99, 179, 237, 0.3) !important;
+          border-color: rgba(59, 130, 246, 0.5) !important;
+          box-shadow: 0 0 20px rgba(59, 130, 246, 0.2) !important;
+          transform: translateY(-1px);
         }
         
         .futuristic-search-toggle:active {
@@ -390,15 +395,20 @@ const NavbarSearchDropdown = () => {
         }
         
         .futuristic-input::placeholder {
-          color: rgba(240, 245, 255, 0.5);
+          color: rgba(15, 23, 42, 0.6);
+        }
+        
+        .futuristic-input:focus {
+          box-shadow: none !important;
+          background: #ffffff !important;
         }
         
         .search-icon-wrapper {
           display: flex;
           align-items: center;
           justify-content: center;
-          width: ${isMobile ? '22px' : '24px'};
-          height: ${isMobile ? '22px' : '24px'};
+          width: ${isMobile ? '24px' : '26px'};
+          height: ${isMobile ? '24px' : '26px'};
           position: relative;
         }
         
@@ -416,21 +426,21 @@ const NavbarSearchDropdown = () => {
           top: 50%;
           left: 50%;
           border-radius: 50%;
-          border: 1px solid rgba(99, 179, 237, 0.4);
+          border: 1px solid rgba(59, 130, 246, 0.3);
           opacity: 0;
           transform: translate(-50%, -50%) scale(0.5);
-          transition: all 0.3s ease;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         .ring-1 {
-          width: 150%;
-          height: 150%;
+          width: 160%;
+          height: 160%;
         }
         
         .ring-2 {
-          width: 200%;
-          height: 200%;
-          border-color: rgba(99, 179, 237, 0.2);
+          width: 220%;
+          height: 220%;
+          border-color: rgba(59, 130, 246, 0.2);
         }
         
         .ring.active {
@@ -439,55 +449,99 @@ const NavbarSearchDropdown = () => {
         }
         
         .pulse-animation {
-          animation: pulse-search 1.5s ease infinite;
+          animation: pulse-search 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
         }
         
         @keyframes pulse-search {
           0% {
-            box-shadow: 0 0 0 0 rgba(99, 179, 237, 0.4);
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.3);
           }
           70% {
-            box-shadow: 0 0 0 8px rgba(99, 179, 237, 0);
+            box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
           }
           100% {
-            box-shadow: 0 0 0 0 rgba(99, 179, 237, 0);
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
           }
         }
         
         .search-submit-btn {
-          transition: all 0.3s ease !important;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+          border: none !important;
         }
         
         .search-submit-btn:hover {
           transform: translateY(-2px);
-          box-shadow: 0 6px 15px rgba(49, 130, 206, 0.4) !important;
+          box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3) !important;
+          background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
         }
         
         .search-submit-btn:active {
           transform: translateY(1px);
+          background: linear-gradient(135deg, #1d4ed8, #1e40af) !important;
+        }
+        
+        .skill-level-btn {
+          background: #ffffff !important;
+          border: 1px solid rgba(59, 130, 246, 0.2) !important;
+          color: rgba(15, 23, 42, 0.7) !important;
         }
         
         .skill-level-btn:hover {
-          background: rgba(99, 179, 237, 0.15) !important;
-          border-color: rgba(99, 179, 237, 0.4) !important;
-          color: rgba(240, 245, 255, 0.8) !important;
+          background: rgba(59, 130, 246, 0.1) !important;
+          border-color: rgba(59, 130, 246, 0.4) !important;
+          color: rgba(15, 23, 42, 0.95) !important;
+          transform: translateY(-1px);
         }
         
-        /* For dark mode compatibility */
+        .skill-level-btn.active {
+          background: rgba(59, 130, 246, 0.1) !important;
+          border-color: rgba(59, 130, 246, 0.4) !important;
+          color: rgba(15, 23, 42, 0.95) !important;
+          box-shadow: 0 0 12px rgba(59, 130, 246, 0.2) !important;
+        }
+        
+        .skill-level-btn:active {
+          transform: translateY(1px);
+          background: rgba(59, 130, 246, 0.15) !important;
+        }
+        
         .form-control:focus {
-          color: rgba(240, 245, 255, 0.9) !important;
+          color: rgba(15, 23, 42, 0.95) !important;
         }
         
-        /* Mobile optimizations */
         @media (max-width: 768px) {
           .skill-level-options {
             justify-content: space-between;
+            gap: 8px !important;
           }
           
           .skill-level-btn {
             flex: 1;
-            min-width: calc(50% - 5px);
+            min-width: calc(50% - 4px);
             justify-content: center;
+            padding: 6px 12px !important;
+          }
+        }
+
+        @media (max-width: 576px) {
+          .futuristic-search-toggle {
+            padding: 0 12px !important;
+            height: 38px !important;
+          }
+
+          .search-icon {
+            margin-right: 0 !important;
+            size: 16px !important;
+          }
+
+          .skill-level-btn {
+            font-size: 0.8rem !important;
+            padding: 6px 10px !important;
+          }
+
+          .futuristic-search-content {
+            padding: 1rem !important;
           }
         }
       `}</style>

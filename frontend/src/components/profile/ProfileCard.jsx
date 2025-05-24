@@ -1,9 +1,295 @@
-import React, { useMemo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { Card, Row, Col, Badge } from 'react-bootstrap';
 import { GeoAltFill, EnvelopeFill, MortarboardFill, BookFill, 
   PeopleFill, StarFill } from 'react-bootstrap-icons';
+import styled from 'styled-components';
+import { breakpoints } from '../../styles/breakpoints';
+import useResponsive from '../../hooks/useResponsive';
 
-const ProfileCard = ({ profile }) => {
+// Styled Components
+const StyledCard = styled(Card)`
+  border: none;
+  border-radius: 1.5rem;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+`;
+
+const UserInfoColumn = styled(Col)`
+  background: #f8fafc;
+  border-right: 1px solid rgba(203, 213, 225, 0.3);
+  
+  @media (max-width: ${breakpoints.md}px) {
+    border-right: none;
+    border-bottom: 1px solid rgba(203, 213, 225, 0.3);
+  }
+`;
+
+const AvatarContainer = styled.div`
+  position: relative;
+  display: inline-block;
+  margin-bottom: 1.5rem;
+`;
+
+const Avatar = styled.div`
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${props => props.color};
+  box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.8), 0 0 0 10px rgba(59, 130, 246, 0.1);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: scale(1.05);
+  }
+  
+  @media (max-width: ${breakpoints.sm}px) {
+    width: 90px;
+    height: 90px;
+  }
+`;
+
+const StatusBadge = styled.div`
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translate(25%, -25%);
+  background: #10b981;
+  border-radius: 50%;
+  padding: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);
+  border: 2px solid white;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translate(25%, -25%) scale(1.1);
+  }
+`;
+
+const UserName = styled.h4`
+  font-weight: 700;
+  color: #1e40af;
+  margin-bottom: 0.5rem;
+  font-size: 1.25rem;
+  
+  @media (max-width: ${breakpoints.sm}px) {
+    font-size: 1.1rem;
+  }
+`;
+
+const LocationBadge = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+`;
+
+const LocationIcon = styled.div`
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.5rem;
+`;
+
+const SectionTitle = styled.h6`
+  text-transform: uppercase;
+  font-weight: 600;
+  color: #64748b;
+  letter-spacing: 1px;
+  margin-bottom: 1rem;
+  font-size: 0.75rem;
+`;
+
+const ContactItem = styled.div`
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+`;
+
+const ContactIcon = styled.div`
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: ${props => props.gradient};
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: scale(1.1);
+  }
+`;
+
+const ContactInfo = styled.div`
+  .label {
+    font-size: 0.75rem;
+    color: #64748b;
+  }
+  .value {
+    font-weight: 600;
+    color: #1e293b;
+  }
+`;
+
+const StatusCard = styled(Card)`
+  border: none;
+  border-radius: 1rem;
+  background: linear-gradient(to right, #f0f9ff, #e0f2fe);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+`;
+
+const SkillsSection = styled.div`
+  margin-bottom: 2rem;
+`;
+
+const SkillsHeader = styled.div`
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.5rem;
+`;
+
+const SkillsIcon = styled.div`
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: ${props => props.gradient};
+  box-shadow: 0 10px 15px -3px ${props => props.shadowColor};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: scale(1.1);
+  }
+`;
+
+const SkillsTitle = styled.h5`
+  font-weight: 700;
+  color: ${props => props.color};
+  margin-bottom: 0.25rem;
+  font-size: 1.1rem;
+`;
+
+const SkillsSubtitle = styled.p`
+  color: #64748b;
+  font-size: 0.875rem;
+  margin-bottom: 0;
+`;
+
+const SkillsList = styled.div`
+  margin-left: 4rem;
+  padding-left: 1rem;
+  
+  @media (max-width: ${breakpoints.sm}px) {
+    margin-left: 3rem;
+  }
+`;
+
+const SkillBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  background: ${props => props.bgColor};
+  color: ${props => props.textColor};
+  border: 1px solid ${props => props.borderColor};
+  font-size: 0.9rem;
+  margin: 0.25rem;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+`;
+
+const StarContainer = styled.div`
+  display: flex;
+  align-items: center;
+  margin-left: 0.5rem;
+  padding-left: 0.5rem;
+  border-left: 1px solid ${props => props.borderColor};
+  
+  .star {
+    color: ${props => props.starColor};
+    margin-right: 0.25rem;
+  }
+`;
+
+const LegendContainer = styled.div`
+  display: flex;
+  align-items: center;
+  margin-top: 1rem;
+  
+  @media (max-width: ${breakpoints.sm}px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+`;
+
+const LegendItem = styled.div`
+  display: flex;
+  align-items: center;
+  margin-right: 1.5rem;
+  
+  .stars {
+    display: flex;
+    margin-right: 0.5rem;
+  }
+  
+  .label {
+    font-size: 0.75rem;
+    color: #64748b;
+  }
+`;
+
+const Divider = styled.hr`
+  margin: 2rem 0;
+  background: rgba(203, 213, 225, 0.5);
+  height: 1px;
+  border: none;
+`;
+
+const MatchCard = styled(Card)`
+  border: none;
+  border-radius: 1rem;
+  background: linear-gradient(to right, #f1f5f9, #f8fafc);
+  border-left: 4px solid #3b82f6;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+`;
+
+const ProfileCard = memo(({ profile }) => {
+  const { isMobile } = useResponsive();
+
   // Calculate number of skills
   const teachingSkillCount = useMemo(() => 
     profile?.teachingSkills ? profile.teachingSkills.length : 0,
@@ -45,99 +331,77 @@ const ProfileCard = ({ profile }) => {
     return `hsl(${(charCode * 70) % 360}, 70%, 65%)`;
   }, [profile?.name]);
 
+  // Function to render stars based on proficiency level
+  const renderStars = (level) => {
+    const count = level === 'Expert' ? 3 : level === 'Intermediate' ? 2 : 1;
+    return Array(count).fill(null).map((_, i) => (
+      <StarFill key={i} size={10} className="star" />
+    ));
+  };
+
   return (
-    <Card className="border-0 shadow-sm rounded-4 overflow-hidden">
+    <StyledCard>
       <Card.Body className="p-0">
         <Row className="g-0">
           {/* Column 1: User Info */}
-          <Col md={4} className="border-end" style={{ background: '#f8fafc' }}>
+          <UserInfoColumn md={4}>
             <div className="p-4 h-100 d-flex flex-column">
               {/* User Avatar and Name */}
-              <div className="text-center mb-4">
-                <div className="position-relative d-inline-block mb-3">
-                  {/* Avatar Circle */}
-                  <div className="rounded-circle d-flex align-items-center justify-content-center border-0 mx-auto" 
-                      style={{ 
-                        width: '110px', 
-                        height: '110px', 
-                        background: avatarColor,
-                        boxShadow: '0 0 0 5px rgba(255, 255, 255, 0.8), 0 0 0 10px rgba(59, 130, 246, 0.1)'
-                      }}>
-                    <h2 className="mb-0 fw-bold text-white" style={{ fontSize: '2.5rem' }}>{getInitials(profile?.name)}</h2>
-                  </div>
-                  
-                  {/* Status Badge */}
-                  <div className="position-absolute top-0 end-0 translate-middle">
-                    <div className="bg-success rounded-circle p-1 shadow-lg" style={{ border: '2px solid white' }}>
-                      <StarFill className="text-white" size={22} />
-                    </div>
-                  </div>
-                </div>
+              <div className="text-center">
+                <AvatarContainer>
+                  <Avatar color={avatarColor}>
+                    <h2 className="mb-0 fw-bold text-white" style={{ fontSize: '2.5rem' }}>
+                      {getInitials(profile?.name)}
+                    </h2>
+                  </Avatar>
+                  <StatusBadge>
+                    <StarFill className="text-white" size={22} />
+                  </StatusBadge>
+                </AvatarContainer>
                 
-                <h4 className="fw-bold mb-1" style={{ color: '#1e40af' }}>{profile?.name || 'User Name'}</h4>
+                <UserName>{profile?.name || 'User Name'}</UserName>
                 
                 {/* Location Badge */}
                 {profile?.country && (
-                  <div className="d-flex align-items-center justify-content-center mb-3">
-                    <div className="me-2 rounded-circle d-flex align-items-center justify-content-center" 
-                      style={{ 
-                        width: '24px', 
-                        height: '24px', 
-                        background: 'rgba(59, 130, 246, 0.1)',
-                        color: '#3b82f6'
-                      }}>
+                  <LocationBadge>
+                    <LocationIcon>
                       <GeoAltFill size={12} />
-                    </div>
+                    </LocationIcon>
                     <span className="text-muted">{profile.country}</span>
-                  </div>
+                  </LocationBadge>
                 )}
               </div>
               
               {/* Contact Information */}
               <div className="mb-4">
-                <h6 className="text-uppercase fw-semibold small mb-3" style={{ color: '#64748b', letterSpacing: '1px' }}>Contact Information</h6>
+                <SectionTitle>Contact Information</SectionTitle>
                 
                 {/* Email */}
-                <div className="d-flex align-items-center mb-3">
-                  <div className="me-3 rounded-circle d-flex align-items-center justify-content-center" 
-                    style={{ 
-                      width: '40px', 
-                      height: '40px', 
-                      background: 'linear-gradient(135deg, #3b82f6, #1e40af)',
-                      color: 'white'
-                    }}>
+                <ContactItem>
+                  <ContactIcon gradient="linear-gradient(135deg, #3b82f6, #1e40af)">
                     <EnvelopeFill size={18} />
-                  </div>
-                  <div>
-                    <div className="small text-muted">Email</div>
-                    <div className="fw-semibold">{profile?.email || 'email@example.com'}</div>
-                  </div>
-                </div>
+                  </ContactIcon>
+                  <ContactInfo>
+                    <div className="label">Email</div>
+                    <div className="value">{profile?.email || 'email@example.com'}</div>
+                  </ContactInfo>
+                </ContactItem>
                 
                 {/* Community Status */}
-                <div className="d-flex align-items-center">
-                  <div className="me-3 rounded-circle d-flex align-items-center justify-content-center" 
-                    style={{ 
-                      width: '40px', 
-                      height: '40px', 
-                      background: 'linear-gradient(135deg, #10b981, #047857)',
-                      color: 'white'
-                    }}>
+                <ContactItem>
+                  <ContactIcon gradient="linear-gradient(135deg, #10b981, #047857)">
                     <PeopleFill size={18} />
-                  </div>
-                  <div>
-                    <div className="small text-muted">Community Status</div>
-                    <div className="fw-semibold">Active Member</div>
-                  </div>
-                </div>
+                  </ContactIcon>
+                  <ContactInfo>
+                    <div className="label">Community Status</div>
+                    <div className="value">Active Member</div>
+                  </ContactInfo>
+                </ContactItem>
               </div>
               
               {/* Activity Status Card */}
               <div className="mt-auto">
-                <Card className="border-0 rounded-4 shadow-sm" style={{ 
-                  background: 'linear-gradient(to right, #f0f9ff, #e0f2fe)',
-                  overflow: 'hidden'
-                }}>
+                <StatusCard>
                   <Card.Body className="p-3">
                     <div className="d-flex align-items-center mb-2">
                       <div className="me-2 rounded-circle d-flex align-items-center justify-content-center" 
@@ -153,54 +417,46 @@ const ProfileCard = ({ profile }) => {
                     </div>
                     <p className="small mb-0 text-muted">Your profile is visible to the community. You're ready to connect with study partners!</p>
                   </Card.Body>
-                </Card>
+                </StatusCard>
               </div>
             </div>
-          </Col>
+          </UserInfoColumn>
           
           {/* Column 2: Skill Information */}
           <Col md={8}>
             <div className="p-4 h-100 d-flex flex-column">
               {/* Teaching Skills Section */}
-              <div className="mb-4">
-                <div className="d-flex align-items-center mb-3">
-                  <div className="me-3">
-                    <div className="rounded-circle d-flex align-items-center justify-content-center" 
-                         style={{ 
-                           width: '48px', 
-                           height: '48px', 
-                           background: 'linear-gradient(135deg, #3b82f6, #1e40af)',
-                           boxShadow: '0 10px 15px -3px rgba(59, 130, 246, 0.3)'
-                         }}>
-                      <MortarboardFill size={22} className="text-white" />
-                    </div>
-                  </div>
+              <SkillsSection>
+                <SkillsHeader>
+                  <SkillsIcon 
+                    gradient="linear-gradient(135deg, #3b82f6, #1e40af)"
+                    shadowColor="rgba(59, 130, 246, 0.3)"
+                  >
+                    <MortarboardFill size={22} className="text-white" />
+                  </SkillsIcon>
                   <div>
-                    <h5 className="fw-bold mb-0" style={{ color: '#1e40af' }}>Teaching Skills</h5>
-                    <p className="text-muted small mb-0">{teachingSkillCount} skills · {teachingStatus}</p>
+                    <SkillsTitle color="#1e40af">Teaching Skills</SkillsTitle>
+                    <SkillsSubtitle>{teachingSkillCount} skills · {teachingStatus}</SkillsSubtitle>
                   </div>
-                </div>
+                </SkillsHeader>
                 
                 {/* Skills List */}
-                <div className="ms-5 ps-4">
+                <SkillsList>
                   <div className="mb-3">
-                    <div className="d-flex flex-wrap gap-2">
+                    <div className="d-flex flex-wrap">
                       {profile?.teachingSkills && profile.teachingSkills.length > 0 ? (
                         profile.teachingSkills.map((skill, index) => (
-                          <span key={`teach-${index}`} className="badge rounded-pill" 
-                            style={{ 
-                              background: 'rgba(59, 130, 246, 0.1)', 
-                              color: '#3b82f6',
-                              border: '1px solid rgba(59, 130, 246, 0.2)',
-                              padding: '0.5rem 1rem',
-                              fontSize: '0.9rem'
-                            }}>
+                          <SkillBadge 
+                            key={`teach-${index}`}
+                            bgColor="rgba(59, 130, 246, 0.1)"
+                            textColor="#3b82f6"
+                            borderColor="rgba(59, 130, 246, 0.2)"
+                          >
                             {skill.skillName}
-                            <div className="d-flex align-items-center ms-2 ps-2 border-start border-primary border-opacity-25">
-                              <StarFill size={10} className="me-1" />
-                              <span>{skill.proficiencyLevel || 3}</span>
-                            </div>
-                          </span>
+                            <StarContainer borderColor="rgba(59, 130, 246, 0.2)" starColor="#3b82f6">
+                              {renderStars(skill.proficiencyLevel)}
+                            </StarContainer>
+                          </SkillBadge>
                         ))
                       ) : (
                         <p className="text-muted fst-italic small">No teaching skills added yet</p>
@@ -209,76 +465,69 @@ const ProfileCard = ({ profile }) => {
                   </div>
 
                   {/* Proficiency Legend */}
-                  <div className="d-flex align-items-center">
+                  <LegendContainer>
                     <span className="me-3 small text-muted">Proficiency:</span>
                     <div className="d-flex gap-3">
-                      <div className="d-flex align-items-center">
-                        <StarFill size={10} className="me-1 text-primary" />
-                        <span className="small text-muted">Beginner</span>
-                      </div>
-                      <div className="d-flex align-items-center">
-                        <div className="d-flex me-1">
+                      <LegendItem>
+                        <div className="stars">
+                          <StarFill size={10} className="text-primary" />
+                        </div>
+                        <span className="label">Beginner</span>
+                      </LegendItem>
+                      <LegendItem>
+                        <div className="stars">
                           <StarFill size={10} className="text-primary" />
                           <StarFill size={10} className="text-primary" />
                         </div>
-                        <span className="small text-muted">Intermediate</span>
-                      </div>
-                      <div className="d-flex align-items-center">
-                        <div className="d-flex me-1">
+                        <span className="label">Intermediate</span>
+                      </LegendItem>
+                      <LegendItem>
+                        <div className="stars">
                           <StarFill size={10} className="text-primary" />
                           <StarFill size={10} className="text-primary" />
                           <StarFill size={10} className="text-primary" />
                         </div>
-                        <span className="small text-muted">Advanced</span>
-                      </div>
+                        <span className="label">Expert</span>
+                      </LegendItem>
                     </div>
-                  </div>
-                </div>
-              </div>
+                  </LegendContainer>
+                </SkillsList>
+              </SkillsSection>
               
-              {/* Divider */}
-              <hr className="my-4" style={{ background: 'rgba(203, 213, 225, 0.5)' }} />
+              <Divider />
               
               {/* Learning Skills Section */}
-              <div className="mb-4">
-                <div className="d-flex align-items-center mb-3">
-                  <div className="me-3">
-                    <div className="rounded-circle d-flex align-items-center justify-content-center" 
-                         style={{ 
-                           width: '48px', 
-                           height: '48px', 
-                           background: 'linear-gradient(135deg, #06b6d4, #0891b2)',
-                           boxShadow: '0 10px 15px -3px rgba(6, 182, 212, 0.3)'
-                         }}>
-                      <BookFill size={22} className="text-white" />
-                    </div>
-                  </div>
+              <SkillsSection>
+                <SkillsHeader>
+                  <SkillsIcon 
+                    gradient="linear-gradient(135deg, #06b6d4, #0891b2)"
+                    shadowColor="rgba(6, 182, 212, 0.3)"
+                  >
+                    <BookFill size={22} className="text-white" />
+                  </SkillsIcon>
                   <div>
-                    <h5 className="fw-bold mb-0" style={{ color: '#0891b2' }}>Learning Skills</h5>
-                    <p className="text-muted small mb-0">{learningSkillCount} skills · {learningStatus}</p>
+                    <SkillsTitle color="#0891b2">Learning Skills</SkillsTitle>
+                    <SkillsSubtitle>{learningSkillCount} skills · {learningStatus}</SkillsSubtitle>
                   </div>
-                </div>
+                </SkillsHeader>
                 
                 {/* Skills List */}
-                <div className="ms-5 ps-4">
+                <SkillsList>
                   <div className="mb-3">
-                    <div className="d-flex flex-wrap gap-2">
+                    <div className="d-flex flex-wrap">
                       {profile?.learningSkills && profile.learningSkills.length > 0 ? (
                         profile.learningSkills.map((skill, index) => (
-                          <span key={`learn-${index}`} className="badge rounded-pill" 
-                            style={{ 
-                              background: 'rgba(6, 182, 212, 0.1)', 
-                              color: '#0891b2',
-                              border: '1px solid rgba(6, 182, 212, 0.2)',
-                              padding: '0.5rem 1rem',
-                              fontSize: '0.9rem'
-                            }}>
+                          <SkillBadge 
+                            key={`learn-${index}`}
+                            bgColor="rgba(6, 182, 212, 0.1)"
+                            textColor="#0891b2"
+                            borderColor="rgba(6, 182, 212, 0.2)"
+                          >
                             {skill.skillName}
-                            <div className="d-flex align-items-center ms-2 ps-2 border-start border-info border-opacity-25">
-                              <StarFill size={10} className="me-1" />
-                              <span>{skill.proficiencyLevel || 1}</span>
-                            </div>
-                          </span>
+                            <StarContainer borderColor="rgba(6, 182, 212, 0.2)" starColor="#0891b2">
+                              {renderStars(skill.proficiencyLevel)}
+                            </StarContainer>
+                          </SkillBadge>
                         ))
                       ) : (
                         <p className="text-muted fst-italic small">No learning skills added yet</p>
@@ -287,39 +536,38 @@ const ProfileCard = ({ profile }) => {
                   </div>
 
                   {/* Interest Legend */}
-                  <div className="d-flex align-items-center">
+                  <LegendContainer>
                     <span className="me-3 small text-muted">Interest Level:</span>
                     <div className="d-flex gap-3">
-                      <div className="d-flex align-items-center">
-                        <StarFill size={10} className="me-1 text-info" />
-                        <span className="small text-muted">Curious</span>
-                      </div>
-                      <div className="d-flex align-items-center">
-                        <div className="d-flex me-1">
+                      <LegendItem>
+                        <div className="stars">
+                          <StarFill size={10} className="text-info" />
+                        </div>
+                        <span className="label">Curious</span>
+                      </LegendItem>
+                      <LegendItem>
+                        <div className="stars">
                           <StarFill size={10} className="text-info" />
                           <StarFill size={10} className="text-info" />
                         </div>
-                        <span className="small text-muted">Interested</span>
-                      </div>
-                      <div className="d-flex align-items-center">
-                        <div className="d-flex me-1">
+                        <span className="label">Interested</span>
+                      </LegendItem>
+                      <LegendItem>
+                        <div className="stars">
                           <StarFill size={10} className="text-info" />
                           <StarFill size={10} className="text-info" />
                           <StarFill size={10} className="text-info" />
                         </div>
-                        <span className="small text-muted">Passionate</span>
-                      </div>
+                        <span className="label">Passionate</span>
+                      </LegendItem>
                     </div>
-                  </div>
-                </div>
-              </div>
+                  </LegendContainer>
+                </SkillsList>
+              </SkillsSection>
               
               {/* Additional Information Card */}
               <div className="mt-auto">
-                <Card className="border-0 rounded-4" style={{ 
-                  background: 'linear-gradient(to right, #f1f5f9, #f8fafc)',
-                  borderLeft: '4px solid #3b82f6'
-                }}>
+                <MatchCard>
                   <Card.Body className="p-3">
                     <div className="d-flex align-items-center mb-1">
                       <h6 className="fw-semibold mb-0">Match Compatibility</h6>
@@ -332,29 +580,16 @@ const ProfileCard = ({ profile }) => {
                       potential for successful study partnerships.
                     </p>
                   </Card.Body>
-                </Card>
+                </MatchCard>
               </div>
-              
-              {/* Animation Styles */}
-              <style>
-                {`
-                @keyframes pulse {
-                  0% { opacity: 0.6; }
-                  50% { opacity: 1; }
-                  100% { opacity: 0.6; }
-                }
-                @keyframes fadeIn {
-                  from { opacity: 0; transform: translateY(-10px); }
-                  to { opacity: 1; transform: translateY(0); }
-                }
-                `}
-              </style>
             </div>
           </Col>
         </Row>
       </Card.Body>
-    </Card>
+    </StyledCard>
   );
-};
+});
+
+ProfileCard.displayName = 'ProfileCard';
 
 export default ProfileCard;

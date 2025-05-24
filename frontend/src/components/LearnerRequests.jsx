@@ -11,11 +11,164 @@ import {
   BoxArrowLeft, 
   Clock,
   PencilSquare,
-  Speedometer
+  Speedometer,
+  Globe
 } from 'react-bootstrap-icons';
+import styled, { keyframes } from 'styled-components';
+import useResponsive from '../hooks/useResponsive';
+import { breakpoints } from '../styles/breakpoints';
 import RequestsList from './learner.requests/RequestsList';
 import EmptyState from './learner.requests/EmptyState';
 import { fetchLearnerRequests, updateRequestStatus } from '../services/requestService';
+
+// Performance optimized animations
+const rotateGlobe = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
+
+// Styled components
+const RevolvingGlobe = styled.div`
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+  border-radius: 50%;
+  padding: ${props => props.$isMobile ? '8px' : '10px'};
+  width: ${props => props.$isMobile ? '32px' : '42px'};
+  height: ${props => props.$isMobile ? '32px' : '42px'};
+  animation: ${rotateGlobe} 10s linear infinite;
+  will-change: transform;
+  
+  svg {
+    color: white;
+    height: ${props => props.$isMobile ? '16px' : '22px'};
+    width: ${props => props.$isMobile ? '16px' : '22px' }
+  }
+`;
+
+const HeaderSection = styled.section`
+  background: linear-gradient(135deg, #0b1437 0%, #1e3a8a 100%);
+  color: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 1.5rem;
+  
+  @media (max-width: ${breakpoints.sm}px) {
+    border-radius: 0.75rem;
+    margin-bottom: 1rem;
+  }
+`;
+
+const HeaderContent = styled.div`
+  padding: ${props => props.$isMobile ? '1rem' : '1.5rem'};
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  
+  @media (min-width: ${breakpoints.md}px) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+`;
+
+const TitleSection = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+`;
+
+const EnhancedTitle = styled.div`
+  min-width: 0;
+  
+  h2 {
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-weight: 800;
+    font-size: ${props => props.$isMobile ? '1.5rem' : '2rem'};
+    margin: 0;
+    letter-spacing: -0.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  p {
+    font-size: ${props => props.$isMobile ? '0.875rem' : '1rem'};
+    margin: 0.25rem 0 0;
+    opacity: 0.8;
+  }
+`;
+
+const ActionButtons = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  
+  @media (max-width: ${breakpoints.md}px) {
+    width: 100%;
+    justify-content: flex-start;
+  }
+`;
+
+const ActionButton = styled(Button)`
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: none;
+  transition: transform 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+  }
+  
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+  
+  @media (max-width: ${breakpoints.md}px) {
+    padding: 0.5rem;
+    
+    span {
+      display: none;
+    }
+  }
+`;
+
+const StatsSection = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0 1.5rem 1.5rem;
+  
+  @media (max-width: ${breakpoints.sm}px) {
+    padding: 0 1rem 1rem;
+  }
+`;
+
+const StatBadge = styled.div`
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+`;
 
 // Memoized loading state for performance
 const LoadingState = memo(() => (
@@ -29,6 +182,33 @@ const LoadingState = memo(() => (
   </div>
 ));
 
+// Add these styled components at the top with other styled components
+const PageContainer = styled(Container)`
+  min-height: 100vh;
+  padding: 0;
+  margin: 0;
+  max-width: 100%;
+  background-color: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+`;
+
+const ContentWrapper = styled.div`
+  flex: 1;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+  
+  @media (min-width: ${breakpoints.sm}px) {
+    padding: 1.5rem;
+  }
+  
+  @media (min-width: ${breakpoints.md}px) {
+    padding: 2rem;
+  }
+`;
+
 const LearnerRequests = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -37,6 +217,7 @@ const LearnerRequests = () => {
 
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { isMobile } = useResponsive();
 
   // Fetch requests
   const fetchRequests = useCallback(async () => {
@@ -100,56 +281,57 @@ const LearnerRequests = () => {
   const completedCount = requests.filter(r => r.status === 'completed').length;
 
   return (
-    <Container fluid className="p-0 min-vh-100 bg-light">
-      <div className="mx-auto px-2 px-sm-3 px-md-4 py-4" style={{ maxWidth: 1200 }}>
+    <PageContainer fluid>
+      <ContentWrapper>
         {/* Hero/Header Section */}
-        <section className="mb-4 rounded-4 shadow-lg bg-gradient position-relative overflow-hidden w-100" style={{ background: 'linear-gradient(135deg, #0b1437 0%, #1e3a8a 100%)', color: '#fff' }}>
-          <div className="p-3 p-md-4 d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
-            <div>
-              <h2 className="fw-bold mb-1" style={{ letterSpacing: '-0.5px', fontSize: '2rem' }}>Learning Requests</h2>
-              <p className="text-white-50 mb-0 d-none d-sm-block">Manage your learning journey and track your progress</p>
-            </div>
-            <div className="d-flex gap-2 flex-wrap">
-              <Button
-                className="rounded-pill px-3 py-2 fw-semibold d-flex align-items-center gap-2"
-                style={{ background: 'linear-gradient(90deg, #8b5cf6, #6d28d9)', border: 'none' }}
+        <HeaderSection>
+          <HeaderContent $isMobile={isMobile}>
+            <TitleSection>
+              <RevolvingGlobe $isMobile={isMobile}>
+                <Globe />
+              </RevolvingGlobe>
+              <EnhancedTitle $isMobile={isMobile}>
+                <h2>Learning Requests</h2>
+                <p>Manage your learning journey and track your progress</p>
+              </EnhancedTitle>
+            </TitleSection>
+            
+            <ActionButtons>
+              <ActionButton
                 onClick={() => navigate('/dashboard')}
-                aria-label="Go to dashboard"
+                style={{ background: 'linear-gradient(90deg, #8b5cf6, #6d28d9)' }}
               >
-                <Speedometer size={16} />
-                <span className="d-none d-md-inline">Dashboard</span>
-              </Button>
-              <Button
-                className="rounded-pill px-3 py-2 fw-semibold d-flex align-items-center gap-2"
-                style={{ background: 'linear-gradient(90deg, #3b82f6, #1e40af)', border: 'none' }}
+                <Speedometer />
+                <span>Dashboard</span>
+              </ActionButton>
+              <ActionButton
                 onClick={() => navigate('/profile')}
-                aria-label="Go to profile"
+                style={{ background: 'linear-gradient(90deg, #3b82f6, #1e40af)' }}
               >
-                <PencilSquare size={16} />
-                <span className="d-none d-md-inline">Profile</span>
-              </Button>
-              <Button
-                className="rounded-pill px-3 py-2 fw-semibold d-flex align-items-center gap-2"
-                style={{ background: 'linear-gradient(90deg, #ef4444, #b91c1c)', border: 'none' }}
+                <PencilSquare />
+                <span>Profile</span>
+              </ActionButton>
+              <ActionButton
                 onClick={handleLogout}
-                aria-label="Logout"
+                style={{ background: 'linear-gradient(90deg, #ef4444, #b91c1c)' }}
               >
-                <BoxArrowLeft size={16} />
-                <span className="d-none d-md-inline">Logout</span>
-              </Button>
-            </div>
-          </div>
-          <div className="d-flex flex-wrap gap-2 gap-md-3 px-3 px-md-4 pb-3 pb-md-4">
-            <div className="bg-white bg-opacity-10 rounded-pill px-3 py-2 d-flex align-items-center gap-2 shadow-sm">
+                <BoxArrowLeft />
+                <span>Logout</span>
+              </ActionButton>
+            </ActionButtons>
+          </HeaderContent>
+          
+          <StatsSection>
+            <StatBadge>
               <Clock className="text-warning" />
-              <span className="fw-semibold">In Progress: {inProgressCount}</span>
-            </div>
-            <div className="bg-white bg-opacity-10 rounded-pill px-3 py-2 d-flex align-items-center gap-2 shadow-sm">
+              <span>In Progress: {inProgressCount}</span>
+            </StatBadge>
+            <StatBadge>
               <CheckCircleFill className="text-success" />
-              <span className="fw-semibold">Completed: {completedCount}</span>
-            </div>
-          </div>
-        </section>
+              <span>Completed: {completedCount}</span>
+            </StatBadge>
+          </StatsSection>
+        </HeaderSection>
 
         {/* Error Alert */}
         {error && (
@@ -241,8 +423,8 @@ const LearnerRequests = () => {
           .rounded-pill { border-radius: 999px !important; }
           .fw-semibold { font-weight: 600 !important; }
         `}</style>
-      </div>
-    </Container>
+      </ContentWrapper>
+    </PageContainer>
   );
 };
 

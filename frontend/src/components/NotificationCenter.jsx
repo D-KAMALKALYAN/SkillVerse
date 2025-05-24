@@ -18,7 +18,11 @@ import {
   Calendar3,
   Clock,
   Bell,
-  BellFill
+  BellFill,
+  BellSlash,
+  CheckCircleFill,
+  ExclamationTriangleFill,
+  InfoCircleFill
 } from "react-bootstrap-icons";
 import { useNotifications } from "../context/NotificationContext";
 import { formatDistanceToNow } from "date-fns";
@@ -89,13 +93,42 @@ const NotificationCenter = () => {
   }, [deleteAllNotifications]);
 
   const getNotificationIcon = useMemo(() => (type) => {
+    const iconSize = isMobile ? 16 : 18;
+    const iconStyle = {
+      width: iconSize,
+      height: iconSize,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    };
+
     switch(type) {
-      case 'alert': return <ExclamationTriangle className="text-white" />;
-      case 'warning': return <ExclamationTriangle className="text-white" />;
-      case 'success': return <CheckCircle className="text-white" />;
-      default: return <InfoCircle className="text-white" />;
+      case 'alert': 
+        return (
+          <div style={iconStyle}>
+            <ExclamationTriangleFill className="text-white" size={iconSize} />
+          </div>
+        );
+      case 'warning': 
+        return (
+          <div style={iconStyle}>
+            <ExclamationTriangleFill className="text-white" size={iconSize} />
+          </div>
+        );
+      case 'success': 
+        return (
+          <div style={iconStyle}>
+            <CheckCircleFill className="text-white" size={iconSize} />
+          </div>
+        );
+      default: 
+        return (
+          <div style={iconStyle}>
+            <InfoCircleFill className="text-white" size={iconSize} />
+          </div>
+        );
     }
-  }, []);
+  }, [isMobile]);
 
   const getNotificationTypeColor = useMemo(() => (type) => {
     switch(type) {
@@ -130,26 +163,37 @@ const NotificationCenter = () => {
     };
   }, [notifications]);
 
-  // Enhanced notification icon with dynamic styling (using Bell icon to match dashboard)
+  // Enhanced notification icon with dynamic styling
   const renderNotificationIcon = () => {
-    // Base icon selection - using Bell icons to match the dashboard theme
+    const iconSize = isMobile ? 18 : 20;
+    const iconStyle = {
+      width: iconSize,
+      height: iconSize,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    };
+
     const baseIcon = unreadCount > 0 ? (
-      <BellFill 
-        size={isMobile ? 16 : 18} 
-        className={`text-white position-relative z-1 ${isAnimating ? 'animate__animated animate__headShake' : ''}`} 
-      />
+      <div style={iconStyle}>
+        <BellFill 
+          size={iconSize} 
+          className={`text-white position-relative z-1 ${isAnimating ? 'animate__animated animate__headShake' : ''}`} 
+        />
+      </div>
     ) : (
-      <Bell 
-        size={isMobile ? 16 : 18} 
-        className="text-white position-relative z-1" 
-      />
+      <div style={iconStyle}>
+        <Bell 
+          size={iconSize} 
+          className="text-white position-relative z-1" 
+        />
+      </div>
     );
     
     return (
       <div className="notification-icon-container position-relative d-flex align-items-center justify-content-center">
         {baseIcon}
         
-        {/* Notification icon glow effect */}
         {unreadCount > 0 && (
           <>
             <span 
@@ -167,7 +211,6 @@ const NotificationCenter = () => {
               }}
             />
             
-            {/* Ripple effect for unread notifications */}
             {pulseRipple && (
               <>
                 <span className="ripple-effect ripple-1"></span>
@@ -183,11 +226,41 @@ const NotificationCenter = () => {
   // Function to render the time category headers with visual enhancements
   const renderTimeFrameHeader = (timeFrame) => {
     const getTimeFrameIcon = () => {
+      const iconSize = isMobile ? 14 : 16;
+      const iconStyle = {
+        width: iconSize,
+        height: iconSize,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: '0.5rem'
+      };
+
       switch(timeFrame) {
-        case 'today': return <Clock size={14} className="me-2" />;
-        case 'yesterday': return <Calendar3 size={14} className="me-2" />;
-        case 'thisWeek': return <Calendar3 size={14} className="me-2" />;
-        case 'older': return <Calendar3 size={14} className="me-2" />;
+        case 'today': 
+          return (
+            <div style={iconStyle}>
+              <Clock size={iconSize} />
+            </div>
+          );
+        case 'yesterday': 
+          return (
+            <div style={iconStyle}>
+              <Calendar3 size={iconSize} />
+            </div>
+          );
+        case 'thisWeek': 
+          return (
+            <div style={iconStyle}>
+              <Calendar3 size={iconSize} />
+            </div>
+          );
+        case 'older': 
+          return (
+            <div style={iconStyle}>
+              <Calendar3 size={iconSize} />
+            </div>
+          );
         default: return null;
       }
     };
@@ -209,12 +282,12 @@ const NotificationCenter = () => {
           background: 'linear-gradient(to right, #f1f5f9, #f8fafc)',
           borderTop: '1px solid rgba(203, 213, 225, 0.5)',
           borderBottom: '1px solid rgba(203, 213, 225, 0.5)',
-          fontSize: '0.75rem',
+          fontSize: isMobile ? '0.7rem' : '0.75rem',
           fontWeight: '600',
           textTransform: 'uppercase',
           letterSpacing: '0.5px',
           color: '#64748b',
-          padding: '0.5rem 1rem',
+          padding: isMobile ? '0.4rem 0.75rem' : '0.5rem 1rem',
           fontFamily: "'Inter', sans-serif"
         }}
       >
@@ -260,6 +333,7 @@ const NotificationCenter = () => {
     .notification-toggle {
       position: relative;
       overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
     
     .notification-toggle:after {
@@ -469,7 +543,7 @@ const NotificationCenter = () => {
             style={{ 
               top: "-5px", 
               right: "-5px", 
-              fontSize: "0.65rem",
+              fontSize: isMobile ? "0.6rem" : "0.65rem",
               minWidth: isMobile ? "16px" : "18px",
               height: isMobile ? "16px" : "18px",
               transform: "translate(25%, -25%)",
@@ -506,7 +580,16 @@ const NotificationCenter = () => {
             }}
           >
             <h6 className="m-0 fw-bold d-flex align-items-center" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              <BellFill size={16} className="me-2 text-primary" />
+              <div style={{ 
+                width: isMobile ? 16 : 18, 
+                height: isMobile ? 16 : 18,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: '0.5rem'
+              }}>
+                <BellFill size={isMobile ? 16 : 18} className="text-primary" />
+              </div>
               <span>Notifications</span>
               {unreadCount > 0 && (
                 <Badge 
@@ -514,9 +597,9 @@ const NotificationCenter = () => {
                   bg="primary" 
                   className="ms-2 d-flex align-items-center justify-content-center"
                   style={{
-                    fontSize: "0.7rem",
-                    height: "20px",
-                    minWidth: "20px",
+                    fontSize: isMobile ? "0.65rem" : "0.7rem",
+                    height: isMobile ? "18px" : "20px",
+                    minWidth: isMobile ? "18px" : "20px",
                     background: "linear-gradient(to right, #4361EE, #3A0CA3)"
                   }}
                 >
@@ -527,20 +610,20 @@ const NotificationCenter = () => {
             <div className="d-flex gap-2">
               {unreadCount > 0 && (
                 <Button 
-                  variant="outline-primary" 
+                  variant="primary" 
                   size="sm" 
                   className="d-flex align-items-center gap-1 py-1 px-2 action-button"
                   onClick={handleMarkAllAsRead}
                   title="Mark all as read"
                   style={{
                     borderRadius: "8px",
-                    fontSize: "0.8rem",
+                    fontSize: isMobile ? "0.75rem" : "0.8rem",
                     fontWeight: "500",
                     border: "1px solid rgba(67, 97, 238, 0.5)",
                     color: "#4361EE"
                   }}
                 >
-                  <Check2All size={14} />
+                  <Check2All size={isMobile ? 14 : 16} />
                   <span className={isMobile ? "d-none" : "d-inline"}>Mark all</span>
                 </Button>
               )}
@@ -553,12 +636,12 @@ const NotificationCenter = () => {
                   title="Delete all notifications"
                   style={{
                     borderRadius: "8px",
-                    fontSize: "0.8rem",
+                    fontSize: isMobile ? "0.75rem" : "0.8rem",
                     fontWeight: "500",
                     border: "1px solid rgba(220, 53, 69, 0.5)"
                   }}
                 >
-                  <TrashFill size={14} />
+                  <TrashFill size={isMobile ? 14 : 16} />
                   <span className={isMobile ? "d-none" : "d-inline"}>Clear all</span>
                 </Button>
               )}
@@ -584,14 +667,14 @@ const NotificationCenter = () => {
                 <div 
                   className="empty-icon-container mx-auto mb-3 d-flex align-items-center justify-content-center"
                   style={{
-                    width: "70px",
-                    height: "70px",
+                    width: isMobile ? "60px" : "70px",
+                    height: isMobile ? "60px" : "70px",
                     borderRadius: "50%",
                     background: "linear-gradient(135deg, #f1f5f9, #f8fafc)",
                     boxShadow: "0 4px 12px rgba(0,0,0,0.06)"
                   }}
                 >
-                  <BellSlashFill size={32} className="text-secondary opacity-60" />
+                  <BellSlash size={isMobile ? 28 : 32} className="text-secondary opacity-60" />
                 </div>
                 <p className="mb-1 fw-bold text-secondary" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>No notifications</p>
                 <small className="text-muted d-block">You're all caught up!</small>
@@ -646,7 +729,7 @@ const NotificationCenter = () => {
                             <div className="flex-grow-1 pe-5">
                               <div className={`notification-title mb-1 ${!notification.read ? 'fw-bold' : ''}`}
                                 style={{
-                                  fontSize: '0.95rem',
+                                  fontSize: isMobile ? '0.9rem' : '0.95rem',
                                   lineHeight: '1.3',
                                   transition: 'color 0.15s ease',
                                   fontFamily: "'Space Grotesk', sans-serif"
@@ -654,13 +737,13 @@ const NotificationCenter = () => {
                               >
                                 {notification.title}
                                 {!notification.read && (
-                                  <CircleFill size={8} className={`ms-2 text-${getNotificationTypeColor(notification.type)}`} />
+                                  <CircleFill size={isMobile ? 6 : 8} className={`ms-2 text-${getNotificationTypeColor(notification.type)}`} />
                                 )}
                               </div>
                               <div 
                                 className="notification-message text-secondary mb-2"
                                 style={{
-                                  fontSize: '0.85rem',
+                                  fontSize: isMobile ? '0.8rem' : '0.85rem',
                                   lineHeight: '1.4',
                                   opacity: notification.read ? 0.9 : 1
                                 }}
@@ -670,10 +753,10 @@ const NotificationCenter = () => {
                               <small 
                                 className="notification-time text-muted d-flex align-items-center"
                                 style={{
-                                  fontSize: '0.75rem'
+                                  fontSize: isMobile ? '0.7rem' : '0.75rem'
                                 }}
                               >
-                                <Clock size={11} className="me-1 text-muted" />
+                                <Clock size={isMobile ? 10 : 11} className="me-1 text-muted" />
                                 {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
                               </small>
                             </div>
@@ -686,15 +769,15 @@ const NotificationCenter = () => {
                                 background: "rgba(248,250,252,0.8)",
                                 borderRadius: "8px",
                                 border: "1px solid rgba(0,0,0,0.08)",
-                                width: "28px",
-                                height: "28px",
+                                width: isMobile ? "24px" : "28px",
+                                height: isMobile ? "24px" : "28px",
                                 transition: "all 0.2s ease",
                                 opacity: 0.7
                               }}
                               onClick={(e) => handleDeleteNotification(e, notification._id)}
                               title="Delete notification"
                             >
-                              <TrashFill size={14} className="text-danger" />
+                              <TrashFill size={isMobile ? 12 : 14} className="text-danger" />
                             </Button>
                           </div>
                         </ListGroup.Item>
